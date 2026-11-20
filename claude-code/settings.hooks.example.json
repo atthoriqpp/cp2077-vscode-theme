@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      { "hooks": [ { "type": "command", "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File \"C:/Users/YOUR_NAME/.claude/hooks/cc-busy.ps1\" on", "timeout": 5 } ] }
+    ],
+    "Stop": [
+      { "hooks": [
+        { "type": "command", "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File \"C:/Users/YOUR_NAME/.claude/hooks/notify.ps1\"", "timeout": 10 },
+        { "type": "command", "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File \"C:/Users/YOUR_NAME/.claude/hooks/cc-busy.ps1\" off", "timeout": 5 }
+      ] }
+    ],
+    "Notification": [
+      { "hooks": [ { "type": "command", "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File \"C:/Users/YOUR_NAME/.claude/hooks/notify.ps1\"", "timeout": 10 } ] }
+    ]
+  },
+  "statusLine": { "type": "command", "command": "node \"C:/Users/YOUR_NAME/.claude/hooks/statusline.js\"", "refreshInterval": 5 }
+}

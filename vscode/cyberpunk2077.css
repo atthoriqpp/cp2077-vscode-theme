@@ -1,0 +1,302 @@
+/* Cyberpunk 2077 skin for VS Code. Loaded by the "Custom CSS and JS Loader" extension (vscode_custom_css.imports). */
+/* Undo: run "Disable Custom CSS and JS" from the command palette, then restart VS Code. */
+
+:root {
+  --cp-yellow: #FCEE0A;
+  --cp-cyan: #02D7F2;
+  --cp-red: #FF003C;
+  --cp-cut: 10px;
+}
+
+/* HUD typography: Rajdhani, close to the game interface font; Bahnschrift as fallback */
+.monaco-workbench .part.titlebar,
+.monaco-workbench .part.statusbar,
+.monaco-workbench .tabs-container .tab,
+.monaco-workbench .pane-header,
+.monaco-workbench .composite.title,
+.monaco-workbench .panel .composite-bar,
+.monaco-workbench .monaco-list,
+.monaco-workbench .quick-input-widget,
+.monaco-workbench .monaco-menu {
+  font-family: "Rajdhani SemiBold", "Rajdhani", "Bahnschrift SemiCondensed", "Segoe UI", sans-serif !important;
+}
+.monaco-workbench .pane-header .title,
+.monaco-workbench .composite.title h2,
+.monaco-workbench .part.statusbar .statusbar-item {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+/* Panel switcher labels keep Rajdhani but NOT letter-spacing: VS Code pre-sizes their slot
+   without this CSS, so extra spacing overflows the slot into the terminal title beside it. */
+.monaco-workbench .panel .composite-bar .action-label {
+  letter-spacing: 0 !important;
+}
+
+/* Neon glow on code, in each token's own colour */
+.monaco-editor .view-lines {
+  text-shadow: 0 0 1px currentColor, 0 0 8px color-mix(in srgb, currentColor 40%, transparent);
+}
+
+/* CRT scanlines over the editor and terminal */
+.monaco-editor .overflow-guard::after,
+.monaco-workbench .terminal-wrapper::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 20;
+  background: repeating-linear-gradient(to bottom, rgba(255, 255, 255, 0.022) 0 1px, transparent 1px 3px);
+}
+
+/* Heartbeat: the terminal box breathes a faint neon pulse (lub-dub) with a rare cyan glitch flick; only while Claude works (cp-busy set by cyberpunk-fx.js) */
+.monaco-workbench.cp-busy .terminal-wrapper {
+  animation: cp-heartbeat 2.4s ease-in-out infinite;
+}
+@keyframes cp-heartbeat {
+  0%   { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--cp-red) 18%, transparent), inset 0 0 8px color-mix(in srgb, var(--cp-red) 8%, transparent); }
+  9%   { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--cp-red) 55%, transparent), inset 0 0 20px color-mix(in srgb, var(--cp-red) 24%, transparent); }
+  18%  { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--cp-red) 18%, transparent), inset 0 0 8px color-mix(in srgb, var(--cp-red) 8%, transparent); }
+  27%  { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--cp-red) 42%, transparent), inset 0 0 16px color-mix(in srgb, var(--cp-red) 18%, transparent); }
+  36%  { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--cp-red) 18%, transparent), inset 0 0 8px color-mix(in srgb, var(--cp-red) 8%, transparent); }
+  61%  { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--cp-cyan) 40%, transparent), inset 0 0 10px color-mix(in srgb, var(--cp-cyan) 16%, transparent); }
+  62%  { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--cp-red) 18%, transparent), inset 0 0 8px color-mix(in srgb, var(--cp-red) 8%, transparent); }
+  100% { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--cp-red) 18%, transparent), inset 0 0 8px color-mix(in srgb, var(--cp-red) 8%, transparent); }
+}
+
+/* Glowing block cursor and active line number */
+.monaco-editor .cursors-layer .cursor {
+  box-shadow: 0 0 6px var(--cp-yellow), 0 0 14px color-mix(in srgb, var(--cp-yellow) 50%, transparent);
+}
+.monaco-editor .line-numbers.active-line-number {
+  text-shadow: 0 0 6px var(--cp-yellow);
+}
+
+/* Active tab: clipped corner, yellow wash, glowing label */
+.monaco-workbench .tabs-container .tab.active {
+  clip-path: polygon(0 0, calc(100% - var(--cp-cut)) 0, 100% var(--cp-cut), 100% 100%, 0 100%);
+  background-image: linear-gradient(to bottom, color-mix(in srgb, var(--cp-yellow) 14%, transparent), transparent 70%) !important;
+}
+.monaco-workbench .tabs-container .tab.active .label-name {
+  text-shadow: 0 0 6px color-mix(in srgb, var(--cp-yellow) 70%, transparent);
+}
+
+/* Title bar and panel edges glow like the game's HUD frames */
+.monaco-workbench .part.titlebar {
+  box-shadow: 0 1px 0 var(--cp-yellow), 0 2px 14px color-mix(in srgb, var(--cp-yellow) 30%, transparent);
+}
+/* Panel edge: a HUD line that starts yellow, turns cyan and fades out, instead of a full yellow rule */
+.monaco-workbench .part.panel > .composite.title {
+  background-image: linear-gradient(90deg, var(--cp-yellow), color-mix(in srgb, var(--cp-cyan) 70%, transparent) 25%, transparent 60%);
+  background-size: 100% 1px;
+  background-repeat: no-repeat;
+  background-position: top left;
+}
+/* Status bar: dark strip with a thin neon top edge, like a street sign at night */
+.monaco-workbench .part.statusbar {
+  box-shadow: 0 -1px 0 color-mix(in srgb, var(--cp-yellow) 70%, transparent), 0 -1px 8px color-mix(in srgb, var(--cp-yellow) 25%, transparent);
+  background-image: linear-gradient(90deg, color-mix(in srgb, var(--cp-cyan) 7%, transparent), transparent 35%, transparent 65%, color-mix(in srgb, var(--cp-red) 7%, transparent)) !important;
+}
+.monaco-workbench .part.statusbar .statusbar-item:hover {
+  text-shadow: 0 0 6px var(--cp-yellow);
+}
+
+/* Floating widgets: clipped corner and cyan glow */
+.monaco-workbench .quick-input-widget,
+.monaco-editor .suggest-widget,
+.monaco-workbench .monaco-hover,
+.monaco-workbench .notification-toast {
+  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%);
+  box-shadow: 0 0 22px color-mix(in srgb, var(--cp-cyan) 28%, transparent) !important;
+}
+
+/* Selected list row (yellow fill): hard black notch on the left */
+.monaco-workbench .monaco-list-row.selected {
+  box-shadow: inset 3px 0 0 #000;
+}
+
+/* Terminal tabs rail: center the icon in the fill. The generic notch + row padding above
+   push the icon right and leave a gap on its left; drop both for this list only. */
+.monaco-workbench .terminal-tabs-container .monaco-list-row {
+  display: flex !important;
+  justify-content: center !important;
+  padding-left: 0 !important;
+}
+.monaco-workbench .terminal-tabs-container .monaco-list-row > *,
+.monaco-workbench .terminal-tabs-container .monaco-list-row .monaco-icon-label-container {
+  margin-left: 0 !important;
+  padding-left: 0 !important;
+}
+.monaco-workbench .terminal-tabs-container .monaco-list-row.selected {
+  box-shadow: none;
+}
+.monaco-workbench .terminal-tabs-container .terminal-tabs-entry {
+  width: 100%;
+  justify-content: center;
+  padding-left: 0 !important;
+}
+.monaco-workbench .terminal-tabs-container .terminal-tabs-entry .monaco-icon-label,
+.monaco-workbench .terminal-tabs-container .terminal-tabs-entry .monaco-icon-label::before {
+  margin-left: 0 !important;
+  padding-left: 0 !important;
+}
+
+/* Sharp, thin scrollbars */
+.monaco-scrollable-element > .scrollbar > .slider {
+  border-radius: 0 !important;
+}
+
+/* ---- Effect pack 2026-11-20 ---- */
+
+/* 2. Night City grid wallpaper over the editor, ~4% */
+.monaco-editor .overflow-guard::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 19;
+  background:
+    repeating-linear-gradient(0deg, color-mix(in srgb, var(--cp-cyan) 4%, transparent) 0 1px, transparent 1px 42px),
+    repeating-linear-gradient(90deg, color-mix(in srgb, var(--cp-cyan) 4%, transparent) 0 1px, transparent 1px 42px);
+}
+
+/* 4. Typing overclock: fast typing tints the active line (class toggled by cyberpunk-fx.js) */
+.monaco-editor.cp-fast .view-overlays .current-line {
+  background: color-mix(in srgb, var(--cp-cyan) 12%, transparent) !important;
+  box-shadow: inset 3px 0 0 var(--cp-cyan);
+  transition: background 160ms ease-out;
+}
+
+/* 5. HUD corner cuts on the side bars and panel */
+.monaco-workbench .part.sidebar,
+.monaco-workbench .part.auxiliarybar {
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%);
+}
+.monaco-workbench .part.panel {
+  clip-path: polygon(14px 0, 100% 0, 100% 100%, 0 100%, 0 14px);
+}
+
+/* Window title glitches when hovered (text colour on hover comes from commandCenter.activeForeground) */
+@keyframes cp-glitch {
+  0%, 100% { text-shadow: none; transform: none; }
+  20% { text-shadow: -2px 0 var(--cp-red), 2px 0 var(--cp-cyan); transform: translateX(1px); }
+  40% { text-shadow: 2px 0 var(--cp-red), -2px 0 var(--cp-cyan); transform: translateX(-1px); }
+  60% { text-shadow: -1px 0 var(--cp-red), 1px 0 var(--cp-cyan); transform: none; }
+}
+.monaco-workbench .part.titlebar .window-title:hover,
+.monaco-workbench .part.titlebar .command-center:hover {
+  animation: cp-glitch 0.35s steps(2) 2;
+}
+
+/* Random glitch: cyberpunk-fx.js adds .cp-glitching to a random part of the window for a moment */
+@keyframes cp-glitch-hit {
+  0% { transform: translateX(0); filter: none; }
+  15% { transform: translateX(-4px); filter: drop-shadow(4px 0 var(--cp-red)) drop-shadow(-4px 0 var(--cp-cyan)); clip-path: inset(10% 0 55% 0); }
+  30% { transform: translateX(3px); filter: drop-shadow(-5px 0 var(--cp-red)) drop-shadow(5px 0 var(--cp-cyan)); clip-path: inset(60% 0 8% 0); }
+  45% { transform: translateX(-2px); filter: drop-shadow(3px 1px var(--cp-red)) drop-shadow(-3px -1px var(--cp-cyan)) hue-rotate(40deg) brightness(1.3); clip-path: none; }
+  60% { transform: translateX(1px); opacity: 0.7; filter: drop-shadow(2px 0 var(--cp-red)) drop-shadow(-2px 0 var(--cp-cyan)); }
+  75%, 100% { transform: none; opacity: 1; filter: none; }
+}
+.cp-glitching { animation: cp-glitch-hit 0.32s steps(1, end) 1; }
+
+/* Upload complete panel (shown on save by cyberpunk-fx.js) */
+.cp-upload {
+  position: fixed; right: 24px; bottom: 40px; z-index: 99998; pointer-events: none;
+  width: 230px; padding: 8px 12px 10px; background: rgba(8, 8, 12, 0.94);
+  border: 1px solid var(--cp-yellow); border-left-width: 3px;
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%);
+  font-family: "Rajdhani SemiBold", "Bahnschrift", sans-serif; color: var(--cp-yellow);
+  animation: cp-upload-in 0.18s steps(3) 1;
+}
+.cp-upload .t { font-size: 15px; letter-spacing: 0.06em; }
+.cp-upload .f { font-family: "Share Tech Mono", Consolas, monospace; font-size: 11px; color: var(--cp-cyan); margin: 1px 0 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cp-upload .g { font-family: "Share Tech Mono", Consolas, monospace; font-size: 10px; color: #6E6E86; letter-spacing: 0.12em; }
+.cp-upload .g b { color: var(--cp-yellow); font-weight: normal; }
+.cp-upload .bar { height: 2px; margin-top: 6px; background: var(--cp-yellow); transform-origin: left; animation: cp-fill 0.45s ease-out 1; }
+@keyframes cp-upload-in { 0% { opacity: 0; transform: translateX(14px); } 50% { opacity: 1; transform: translateX(-3px); } 100% { transform: none; } }
+@keyframes cp-fill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+/* Cyberpsychosis warning: red heartbeat on the window edges when errors go up */
+.cp-psycho {
+  position: fixed; inset: 0; z-index: 99997; pointer-events: none;
+  animation: cp-heart 0.8s ease-out 2;
+}
+.cp-psycho .tag {
+  position: absolute; top: 44px; left: 50%; transform: translateX(-50%); padding: 3px 14px;
+  background: var(--cp-red); color: #000; font-family: "Rajdhani SemiBold", "Bahnschrift", sans-serif; font-size: 14px; letter-spacing: 0.12em;
+  clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+}
+@keyframes cp-heart {
+  0% { box-shadow: inset 0 0 0 0 transparent; }
+  15% { box-shadow: inset 0 0 70px 8px color-mix(in srgb, var(--cp-red) 55%, transparent); }
+  30% { box-shadow: inset 0 0 30px 2px color-mix(in srgb, var(--cp-red) 25%, transparent); }
+  45% { box-shadow: inset 0 0 60px 6px color-mix(in srgb, var(--cp-red) 45%, transparent); }
+  100% { box-shadow: inset 0 0 0 0 transparent; }
+}
+
+/* Kiroshi scanner: corner brackets and a SCANNING tag on the hovered explorer row */
+.explorer-folders-view .monaco-list-row:hover {
+  background-image:
+    linear-gradient(var(--cp-cyan), var(--cp-cyan)), linear-gradient(var(--cp-cyan), var(--cp-cyan)),
+    linear-gradient(var(--cp-cyan), var(--cp-cyan)), linear-gradient(var(--cp-cyan), var(--cp-cyan)),
+    linear-gradient(var(--cp-cyan), var(--cp-cyan)), linear-gradient(var(--cp-cyan), var(--cp-cyan)),
+    linear-gradient(var(--cp-cyan), var(--cp-cyan)), linear-gradient(var(--cp-cyan), var(--cp-cyan));
+  background-repeat: no-repeat;
+  background-size: 7px 1px, 1px 7px, 7px 1px, 1px 7px, 7px 1px, 1px 7px, 7px 1px, 1px 7px;
+  background-position: 2px 1px, 2px 1px, calc(100% - 2px) 1px, calc(100% - 2px) 1px,
+    2px calc(100% - 1px), 2px calc(100% - 1px), calc(100% - 2px) calc(100% - 1px), calc(100% - 2px) calc(100% - 1px);
+}
+.explorer-folders-view .monaco-list-row:hover::after {
+  content: "SCANNING..."; position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+  font-family: "Share Tech Mono", Consolas, monospace; font-size: 9px; color: var(--cp-cyan); letter-spacing: 0.1em;
+  animation: cp-blink 0.9s steps(2) infinite; pointer-events: none;
+}
+@keyframes cp-blink { 50% { opacity: 0.25; } }
+
+/* Relic malfunction: rare full-screen red event */
+.cp-relic {
+  position: fixed; inset: 0; z-index: 99999; pointer-events: none; display: flex; align-items: center; justify-content: center;
+  background: repeating-linear-gradient(to bottom, rgba(255, 0, 60, 0.16) 0 2px, transparent 2px 5px);
+  animation: cp-relic 1.3s steps(1, end) 1;
+}
+.cp-relic span {
+  font-family: "Rajdhani", "Bahnschrift", sans-serif; font-weight: 700; font-size: 64px; letter-spacing: 0.14em; color: var(--cp-red);
+  text-shadow: -4px 0 var(--cp-cyan), 4px 0 #000, 0 0 30px var(--cp-red);
+}
+@keyframes cp-relic {
+  0% { opacity: 1; transform: translateX(0); } 10% { transform: translateX(-12px); opacity: 0.4; } 18% { transform: translateX(8px); opacity: 1; }
+  30% { opacity: 0.2; } 38% { opacity: 1; transform: none; } 70% { opacity: 0.85; } 78% { opacity: 0.1; } 86%, 100% { opacity: 0; }
+}
+
+/* Turn-done sweep: one cyan scan line crosses the terminal when Claude's turn ends (cp-done set briefly by cyberpunk-fx.js) */
+.monaco-workbench.cp-done .terminal-wrapper::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 5;
+  background: linear-gradient(to bottom, transparent, color-mix(in srgb, var(--cp-cyan) 55%, transparent) 50%, transparent) no-repeat;
+  background-size: 100% 22%;
+  animation: cp-sweep 0.9s ease-in 1 forwards;
+}
+@keyframes cp-sweep {
+  from { background-position: 0 -25%; opacity: 1; }
+  80% { opacity: 1; }
+  to { background-position: 0 125%; opacity: 0; }
+}
+
+/* Boot sequence: shown once when the window loads (built by cyberpunk-fx.js) */
+.cp-boot {
+  position: fixed; inset: 0; z-index: 100000; pointer-events: none; background: #050507;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+  font-family: "Rajdhani SemiBold", "Bahnschrift", sans-serif; color: var(--cp-yellow);
+  animation: cp-boot-out 0.35s ease-in 1.5s 1 forwards;
+}
+.cp-boot .t { font-size: 22px; letter-spacing: 0.22em; text-shadow: -2px 0 var(--cp-red), 2px 0 var(--cp-cyan); animation: cp-upload-in 0.18s steps(3) 1; }
+.cp-boot .s { font-family: "Share Tech Mono", Consolas, monospace; font-size: 12px; letter-spacing: 0.14em; color: var(--cp-cyan); }
+.cp-boot .bar { width: 240px; height: 2px; background: var(--cp-yellow); transform-origin: left; animation: cp-fill 1.2s ease-out 1; }
+@keyframes cp-boot-out { to { opacity: 0; visibility: hidden; } }
+
+/* Sandevistan engaged tag */
+.cp-sande {
+  position: fixed; top: 44px; left: 50%; transform: translateX(-50%); z-index: 99998; pointer-events: none; padding: 3px 14px;
+  background: linear-gradient(90deg, #00FF9C, var(--cp-cyan), #7B5CFF, #FF2BD6, var(--cp-yellow)); color: #000;
+  font-family: "Rajdhani SemiBold", "Bahnschrift", sans-serif; font-size: 14px; letter-spacing: 0.12em;
+  clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+  animation: cp-upload-in 0.18s steps(3) 1;
+}

@@ -1,0 +1,11 @@
+{
+  "name": "cc-busy-bridge",
+  "displayName": "Claude Busy Bridge",
+  "description": "Invisible status-bar flag that signals when Claude Code is on its turn, for the cyberpunk heartbeat.",
+  "version": "0.0.1",
+  "publisher": "local",
+  "engines": { "vscode": "^1.70.0" },
+  "activationEvents": ["onStartupFinished"],
+  "main": "./extension.js",
+  "contributes": {}
+}
