@@ -15,6 +15,9 @@ This is a fan project. It is not affiliated with or endorsed by CD Projekt Red. 
 - A faint cyan grid behind the editor text (4% opacity).
 - Terminal scanlines.
 - A glitch on the window title when you hover it.
+- A `// QUICKHACK` header on the Command Palette and other quick inputs.
+- Address labels: `//` on sidebar section headers, a `ROOT//` breadcrumb start and `NODE://` before the git branch.
+- A short cyan edge flash when focus moves between the editor, terminal and sidebar.
 
 **Effects (`cyberpunk-fx.js`)**
 - **Random glitch:** every 15 to 45 seconds one part of the window glitches, with a red and cyan colour split. About 1 in 5 hits the whole window.
@@ -25,6 +28,13 @@ This is a fan project. It is not affiliated with or endorsed by CD Projekt Red. 
 - **Typing overclock:** typing 7 or more keys in a second tints the current line cyan. It clears half a second after you slow down.
 - **Boot sequence:** a short "NEURAL LINK ESTABLISHED" splash when a window loads.
 - **Relic malfunction:** a rare full-window glitch every 90 to 150 minutes. Run `cpRelic()` in the developer console to see it now.
+- **Humanity drift:** the window has an instability level from 0 to 3. It rises with time worked without a 5 minute break (30, 60 and 90 minutes) and with the error count (any error is level 1, 5 or more is level 2). A red edge breathes faster as it climbs, glitches come more often, and level 3 adds red and cyan fringes on the code. Run `cpStage(3)` to hold a level for 30 seconds.
+- **Target lock:** a cursor jump of more than 15 lines snaps cyan brackets onto the new line. It reads the `Ln` number from the status bar, so it expects the English UI.
+- **Data rain:** glyphs fall over an empty editor. After 3 minutes idle they cover the whole editor with a `NEURAL LINK IDLE` tag until you touch a key or the mouse.
+- **City rain:** faint cyan streaks over the editor, denser at night by your clock. `cpRain(false)` turns it off for good and `cpRain(true)` brings it back.
+- **Neon flicker:** now and then the title or the active tab label stutters like a failing neon sign.
+- **Link restored:** coming back to the window after 3 seconds or more away sweeps a thin cyan bar across the top.
+- **Scanner chatter:** every 4 to 9 minutes a short NCPD dispatch shows bottom left. Categories and districts follow the game's scanner hustle types and Night City map. The sentences are original. At instability level 2 or higher many become cyberpsycho sightings. Run `cpScan()` to see one now.
 
 **Claude Code extras**
 - **Heartbeat:** while Claude is working, the terminal border pulses a faint red lub-dub with a rare cyan flick. It is off when Claude is idle.
@@ -60,7 +70,11 @@ Claude Code hook -> ~/.claude/.cc-busy file -> cc-busy-bridge extension -> hidde
 
 The flag is a plain text file. The extension ignores a flag older than 10 minutes, in case a turn ended without the Stop hook running.
 
-### 3. Status line and popup (optional)
+### 3. District tag (optional)
+
+Copy `extensions/nc-district/` to `~/.vscode/extensions/nc-district/` and restart VS Code. The status bar then shows `DISTRICT // <NAME>`, one of the six Night City districts picked from your open folder's name. With no folder open it shows Badlands. The extension is read-only and sends nothing anywhere.
+
+### 4. Status line and popup (optional)
 
 Copy the other three files in `claude-code/hooks/` next to `cc-busy.ps1`, then use the `statusLine` and `Stop` or `Notification` entries from the example settings file. The popup uses WPF, so it is Windows only.
 

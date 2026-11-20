@@ -1,0 +1,11 @@
+{
+  "name": "nc-district",
+  "displayName": "Night City District",
+  "description": "Status bar tag that names a Night City district for the open folder.",
+  "version": "0.0.1",
+  "publisher": "local",
+  "engines": { "vscode": "^1.70.0" },
+  "activationEvents": ["onStartupFinished"],
+  "main": "./extension.js",
+  "contributes": {}
+}
