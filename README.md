@@ -18,6 +18,9 @@ This is a fan project. It is not affiliated with or endorsed by CD Projekt Red. 
 - A `// QUICKHACK` header on the Command Palette and other quick inputs.
 - Address labels: `//` on sidebar section headers, a `ROOT//` breadcrumb start and `NODE://` before the git branch.
 - A short cyan edge flash when focus moves between the editor, terminal and sidebar.
+- A faint `NIGHT CITY OS` watermark behind the code, bottom right, with two short glitch bursts every 8 seconds. It freezes while Claude is busy.
+- Selections in yellow with an outline, and every other match of the selected text in cyan with an underline, so a partial pick like `SEL` in `SELECT` is easy to spot.
+- Notification pop-ups get a yellow edge and a `// INCOMING MESSAGE` header. Hover tooltips get a cyan edge and a scan line that sweeps once as they open.
 
 **Effects (`cyberpunk-fx.js`)**
 - **Random glitch:** every 15 to 45 seconds one part of the window glitches, with a red and cyan colour split. About 1 in 5 hits the whole window.
@@ -34,7 +37,8 @@ This is a fan project. It is not affiliated with or endorsed by CD Projekt Red. 
 - **City rain:** faint cyan streaks over the editor, denser at night by your clock. `cpRain(false)` turns it off for good and `cpRain(true)` brings it back.
 - **Neon flicker:** now and then the title or the active tab label stutters like a failing neon sign.
 - **Link restored:** coming back to the window after 3 seconds or more away sweeps a thin cyan bar across the top.
-- **Scanner chatter:** every 4 to 9 minutes a short NCPD dispatch shows bottom left. Categories and districts follow the game's scanner hustle types and Night City map. The sentences are original. At instability level 2 or higher many become cyberpsycho sightings. Run `cpScan()` to see one now.
+- **Scanner chatter:** every 1.5 to 4 minutes a short NCPD dispatch shows bottom left, with a case number, unit and priority. Categories include assault, reported crime, organized crime, cyberpsycho, suspicious activity, traffic and public disturbance. Districts follow the Night City map and the sentences are original. At instability level 2 or higher many become cyberpsycho sightings. The card fades out with a short glitch. Run `cpScan()` to see one now.
+- **Character lines:** 36 short original lines credited to Night City archetypes. One shows under the boot splash, one rotates on the idle screen, and one changes every 30 seconds in the status bar gap. Run `cpTick()` to change the status bar one now.
 
 **Claude Code extras**
 - **Heartbeat:** while Claude is working, the terminal border pulses a faint red lub-dub with a rare cyan flick. It is off when Claude is idle.
@@ -70,9 +74,15 @@ Claude Code hook -> ~/.claude/.cc-busy file -> cc-busy-bridge extension -> hidde
 
 The flag is a plain text file. The extension ignores a flag older than 10 minutes, in case a turn ended without the Stop hook running.
 
-### 3. District tag (optional)
+### 3. Status bar HUD (optional)
 
-Copy `extensions/nc-district/` to `~/.vscode/extensions/nc-district/` and restart VS Code. The status bar then shows `DISTRICT // <NAME>`, one of the six Night City districts picked from your open folder's name. With no folder open it shows Badlands. The extension is read-only and sends nothing anywhere.
+Copy `extensions/nc-district/` to `~/.vscode/extensions/nc-district/` and restart VS Code. Three items appear in the status bar:
+
+- `DISTRICT // <NAME>`: one of the six Night City districts, picked from your open folder's name. With no folder open it shows Badlands.
+- `REC hh:mm:ss`: how long Claude has worked for you today. It counts only while Claude is busy, so it needs the hook from step 2. The dot pulses while it counts. It resets each day.
+- `CRED LV n`: street cred. XP comes from finished Claude turns (40 plus 1 per 3 seconds, up to 120), saves (10) and typing (0.2 per key). Level n needs 200 x n x (n - 1) XP. A level-up shows as a notification.
+
+The extension only reads the flag file and your editor events, and keeps its numbers in VS Code's own storage. It sends nothing anywhere.
 
 ### 4. Status line and popup (optional)
 

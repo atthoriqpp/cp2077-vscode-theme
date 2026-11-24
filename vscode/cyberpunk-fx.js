@@ -2,7 +2,7 @@
 // Text cursor trail removed 2026-11-19 (too distracting when clicking around code); the mouse pointer trail stays.
 
 // Random glitch: every 15-45 s one part of the window glitches; about 1 in 5 hits the whole window
-(() => {
+try { (() => {
   const PARTS = ['.part.titlebar', '.part.statusbar', '.tabs-container .tab.active', '.part.sidebar', '.part.panel', '.part.activitybar'];
   const RATE = [1, 1.6, 3, 6]; // glitch frequency multiplier per instability level (window.cpLevel, set by the humanity drift block)
   const hit = () => {
@@ -16,10 +16,10 @@
     setTimeout(hit, (15000 + Math.random() * 30000) / RATE[lv]);
   };
   setTimeout(hit, 4000);
-})();
+})(); } catch (e) { console.error("[cp-fx]", e); }
 
 // Humanity drift: instability level 0-3 from time worked without a 5 min break and from the error count; sets cp-lv1..3 on the workbench
-(() => {
+try { (() => {
   const IDLE = 5 * 60000, DRIFT = [30, 60, 90]; // minutes of work for levels 1, 2, 3
   let start = Date.now(), lastAct = Date.now(), forced = null, lv = 0, edge = null;
   const act = () => { lastAct = Date.now(); };
@@ -44,10 +44,10 @@
     if (next !== lv) { wb.classList.remove('cp-lv1', 'cp-lv2', 'cp-lv3'); if (next) wb.classList.add('cp-lv' + next); lv = next; }
     window.cpLevel = lv;
   }, 1000);
-})();
+})(); } catch (e) { console.error("[cp-fx]", e); }
 
 // Sandevistan mouse pointer, random encounter: every 2-5 min it engages for 8-12 s, then cools down
-(() => {
+try { (() => {
   const COLS = ['#FCEE0A', '#FF2BD6', '#7B5CFF', '#02D7F2', '#00FF9C'];
   const STEP = 10; // px between afterimages
   const ARROW = 'polygon(0px 0px, 0px 16px, 4px 12px, 7px 18px, 9px 17px, 6px 11px, 11px 11px)';
@@ -77,10 +77,10 @@
     requestAnimationFrame(() => requestAnimationFrame(() => { g.style.opacity = '0'; }));
     setTimeout(() => { g.remove(); live--; }, 420);
   }, { passive: true });
-})();
+})(); } catch (e) { console.error("[cp-fx]", e); }
 
 // Tab encounters: opening, closing or switching a file has a 1 in 3 chance to glitch the editor
-(() => {
+try { (() => {
   const CHANCE = 0.33, COOLDOWN = 1500;
   let sig = null, lastHit = 0;
   const tick = () => {
@@ -99,10 +99,10 @@
     setTimeout(tick, 200);
   };
   tick();
-})();
+})(); } catch (e) { console.error("[cp-fx]", e); }
 
 // Heartbeat gate: the cc-busy-bridge extension shows a hidden status-bar flag while Claude works; mirror it to a cp-busy class
-(() => {
+try { (() => {
   const find = () => {
     for (const el of document.querySelectorAll('.part.statusbar .statusbar-item')) {
       if ((el.id && el.id.indexOf('busyflag') !== -1) || el.getAttribute('aria-label') === 'Claude Busy') {
@@ -133,19 +133,72 @@
     if (!(a && a.closest && a.closest('.terminal-wrapper, .xterm'))) return;
     killed = stamp; tick();
   }, true);
-})();
+})(); } catch (e) { console.error("[cp-fx]", e); }
 
-// Boot sequence: a short neural-link splash when the window loads
-(() => {
+// Loading-screen lines: original one-liners in the voice of Night City's cast; window.cpQuote() returns a fresh card element
+try { (() => {
+  const LINES = [
+    ['V', 'Mercenary', 'Every gig is a bet that you walk away. So far the house has lost.'],
+    ['V', 'Mercenary', 'Night City does not owe you a legend. You take one or you leave.'],
+    ['Johnny Silverhand', 'Rockerboy', 'Rebellion is supposed to be loud. Turn it up, choom.'],
+    ['Johnny Silverhand', 'Rockerboy', 'The corps own the skyline. We used to own the stage.'],
+    ['Jackie Welles', 'Merc, Valentinos', 'Heywood taught me loyalty first and chrome second.'],
+    ['Jackie Welles', 'Merc, Valentinos', 'Big dreams, bigger city. Keep your people close and the rest works itself out.'],
+    ['Judy Alvarez', 'Braindance editor', 'Memory is the product. Edit with care, somebody has to live it.'],
+    ['Judy Alvarez', 'Braindance editor', 'Everyone wants the clip. Nobody wants to know what it cost.'],
+    ['Panam Palmer', 'Aldecaldo nomad', 'Out in the Badlands the family is the engine. Keep it fuelled.'],
+    ['Panam Palmer', 'Aldecaldo nomad', 'A clan without wheels is just a crowd. Check the tyres.'],
+    ['River Ward', 'NCPD detective', 'A badge is only as clean as the hand that carries it.'],
+    ['River Ward', 'NCPD detective', 'Some cases close on paper. The streets keep their own file.'],
+    ['Kerry Eurodyne', 'Rockstar, Samurai', 'Fame fades. The riff does not.'],
+    ['Kerry Eurodyne', 'Rockstar, Samurai', 'Every stadium goes quiet eventually. Write something that outlasts the noise.'],
+    ['Rogue Amendiares', 'Fixer, Afterlife', 'Afterlife keeps a table for every legend. Earn yours the hard way.'],
+    ['Rogue Amendiares', 'Fixer, Afterlife', 'Reputation is the only currency the corps cannot print.'],
+    ['Viktor Vektor', 'Ripperdoc', 'Chrome is a loan. The body always collects.'],
+    ['Viktor Vektor', 'Ripperdoc', 'I can patch most things. Ask before you break the rest.'],
+    ['Goro Takemura', 'Arasaka bodyguard', 'Honour is a quiet thing. Keep it that way.'],
+    ['Misty Olszewski', 'Esoterica', 'The cards do not promise, they warn. Listen anyway.'],
+    ['Wakako Okada', 'Fixer, Japantown', 'Every favour has a price. I only keep the receipts.'],
+    ['Delamain', 'Taxi AI', 'Your destination is ready. A seatbelt is also advised.'],
+    ['Alt Cunningham', 'Netrunner', 'Behind every firewall is something that wanted out.'],
+    ['Adam Smasher', 'Arasaka cyborg', 'Flesh is a rounding error. Chrome is policy.'],
+    ['Saburo Arasaka', 'Arasaka founder', 'Corporations outlive empires. Plan in centuries.'],
+    ['Hanako Arasaka', 'Arasaka heir', 'Legacy is a blade. Mind which end you hold.'],
+    ['Songbird', 'NUSA netrunner', 'Some signals are meant to stay lost.'],
+    ['Solomon Reed', 'FIA agent', 'In Dogtown every ally is a debt in disguise.'],
+    ['Rosalind Myers', 'NUSA president', 'Peace belongs to whoever outlasts the war.'],
+    ['Kurt Hansen', 'Dogtown overlord', 'A wall is just a promise with guards.'],
+    ['David Martinez', 'Edgerunner', 'Chrome is the way up, right until it is the only thing left.'],
+    ['Lucy', 'Netrunner', 'Somewhere above the smog there is a quiet place. I am still looking for the way up.'],
+    ['Maine', 'Edgerunner crew leader', 'A crew is a promise. Break it and no chrome will save you.'],
+    ['Rebecca', 'Edgerunner', 'Small frame, big guns, zero patience.'],
+    ['Kiwi', 'Netrunner', 'See the room before anyone walks into it. That is the whole job.'],
+    ['Faraday', 'Fixer', 'Gigs pay when the phone rings. Keep it ringing.'],
+  ];
+  let last = -1;
+  window.cpQuote = () => {
+    let i; do { i = Math.floor(Math.random() * LINES.length); } while (i === last && LINES.length > 1);
+    last = i;
+    const [name, role, text] = LINES[i];
+    const d = document.createElement('div'); d.className = 'cp-quote';
+    const n = document.createElement('div'); n.className = 'n'; n.textContent = `${name.toUpperCase()} // ${role.toUpperCase()}`;
+    const t = document.createElement('div'); t.className = 'q'; t.textContent = text;
+    d.append(n, t);
+    return d;
+  };
+})(); } catch (e) { console.error("[cp-fx]", e); }
+
+// Boot sequence: a neural-link splash with one loading-screen line when the window loads
+try { (() => {
   const mk = (cls, text) => { const d = document.createElement('div'); d.className = cls; if (text) d.textContent = text; return d; };
   const boot = mk('cp-boot');
-  boot.append(mk('t', 'NEURAL LINK ESTABLISHED'), mk('s', '// NIGHT CITY OS'), mk('bar'));
+  boot.append(mk('t', 'NEURAL LINK ESTABLISHED'), mk('s', '// NIGHT CITY OS'), mk('bar'), window.cpQuote());
   document.body.appendChild(boot);
-  setTimeout(() => boot.remove(), 2000);
-})();
+  setTimeout(() => boot.remove(), 3000);
+})(); } catch (e) { console.error("[cp-fx]", e); }
 
 // Data rain: falling glyphs fill an empty editor group (no file open), and the whole editor after 3 min idle (standby); removed on the next input
-(() => {
+try { (() => {
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   const GLYPHS = 'ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿ0123456789ABCDEF<>/|=+*';
   const SIZE = 16, FRAME = 70, STANDBY = 3 * 60000; // FRAME: ms between steps, about 14 fps
@@ -156,6 +209,11 @@
     lastInput = Date.now();
     if (tag) stop();
   }, { passive: true, capture: true }));
+  setInterval(() => { // loading-screen style: a new line every 8 s while on standby
+    if (!tag) return;
+    const q = tag.querySelector('.cp-quote');
+    if (q) q.replaceWith(window.cpQuote());
+  }, 8000);
   const findHost = () => {
     if (document.hidden) return null;
     const idle = Date.now() - lastInput > STANDBY && !document.querySelector('.monaco-workbench.cp-busy');
@@ -195,16 +253,18 @@
       cv.style.cssText = 'position:fixed;pointer-events:none;z-index:4;';
       document.body.appendChild(cv); ctx = cv.getContext('2d');
       if (el.classList.contains('part')) { // standby: whole editor part
-        tag = document.createElement('div'); tag.className = 'cp-standby'; tag.textContent = 'NEURAL LINK IDLE';
+        tag = document.createElement('div'); tag.className = 'cp-standby';
+        const title = document.createElement('div'); title.className = 't'; title.textContent = 'NEURAL LINK IDLE';
+        tag.append(title, window.cpQuote());
         document.body.appendChild(tag);
       }
       requestAnimationFrame(loop);
     }
   }, 500);
-})();
+})(); } catch (e) { console.error("[cp-fx]", e); }
 
 // Target lock: a big cursor jump (go to definition, search hit, line jump) snaps cyan brackets onto the new line
-(() => {
+try { (() => {
   const JUMP = 15, HOLD = 650; // lines moved at once, ms the lock shows
   let key = null, ln = null, ed = null, off = null, nav = 0;
   // plain PageUp/PageDown/arrow travel is not a jump
@@ -222,10 +282,10 @@
     }
     key = k; ln = n;
   }, 100);
-})();
+})(); } catch (e) { console.error("[cp-fx]", e); }
 
 // Link restored: coming back to the window after 3 s or more away sweeps a thin cyan bar across the top
-(() => {
+try { (() => {
   const AWAY = 3000;
   let blurAt = null, cur = null;
   window.addEventListener('blur', () => { blurAt = Date.now(); });
@@ -238,10 +298,10 @@
     document.body.appendChild(d); cur = d;
     setTimeout(() => d.remove(), 1100);
   });
-})();
+})(); } catch (e) { console.error("[cp-fx]", e); }
 
 // Panel focus flicker: moving focus between editor, terminal and sidebar flashes the new part's edge
-(() => {
+try { (() => {
   let lastPart = null;
   document.addEventListener('focusin', (e) => {
     const p = e.target.closest ? e.target.closest('.part.editor, .part.panel, .part.sidebar, .part.auxiliarybar') : null;
@@ -250,10 +310,10 @@
     p.classList.add('cp-focus');
     setTimeout(() => p.classList.remove('cp-focus'), 300);
   }, true);
-})();
+})(); } catch (e) { console.error("[cp-fx]", e); }
 
 // Neon flicker: every 25-70 s the title or the active tab label stutters like a failing neon sign
-(() => {
+try { (() => {
   const TARGETS = ['.part.titlebar .window-title', '.tabs-container .tab.active .label-name'];
   const hit = () => {
     if (!document.hidden) {
@@ -266,15 +326,15 @@
     setTimeout(hit, 25000 + Math.random() * 45000);
   };
   setTimeout(hit, 9000);
-})();
+})(); } catch (e) { console.error("[cp-fx]", e); }
 
 // City rain: faint cyan streaks over the editor, denser at night by the real clock; cpRain(false) turns it off for good, cpRain(true) back on
-(() => {
+try { (() => {
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   const KEY = 'cp-rain', FRAME = 33;
   window.cpRain = (on) => { localStorage.setItem(KEY, on ? '1' : '0'); };
   let cv = null, ctx = null, host = null, drops = [], w = 0, h = 0, last = 0;
-  const density = () => { const hr = new Date().getHours(); return hr >= 19 || hr < 5 ? 1 : hr >= 17 || hr < 7 ? 0.55 : 0.3; };
+  const density = () => { const hr = new Date().getHours(); return hr >= 19 || hr < 5 ? 1 : hr >= 17 || hr < 7 ? 0.8 : 0.6; };
   const stop = () => { if (cv) cv.remove(); cv = ctx = host = null; };
   const loop = (t) => {
     if (!cv) return;
@@ -291,7 +351,7 @@
     cv.style.left = r.left + 'px'; cv.style.top = r.top + 'px';
     ctx.clearRect(0, 0, w, h);
     [true, false].forEach((far) => {
-      ctx.strokeStyle = far ? 'rgba(2,215,242,0.07)' : 'rgba(2,215,242,0.14)';
+      ctx.strokeStyle = far ? 'rgba(2,215,242,0.1)' : 'rgba(2,215,242,0.22)';
       ctx.beginPath();
       drops.forEach((d) => {
         if (d.far !== far) return;
@@ -308,15 +368,15 @@
     if (el && !cv) {
       host = el; w = h = 0;
       cv = document.createElement('canvas');
-      cv.style.cssText = 'position:fixed;pointer-events:none;z-index:3;';
+      cv.style.cssText = 'position:fixed;pointer-events:none;z-index:30;';
       document.body.appendChild(cv); ctx = cv.getContext('2d'); ctx.lineWidth = 1;
       requestAnimationFrame(loop);
     }
   }, 1000);
-})();
+})(); } catch (e) { console.error("[cp-fx]", e); }
 
-// Scanner chatter: every 4-9 min a short NCPD dispatch shows bottom left; cpScan() shows one now
-(() => {
+// Scanner chatter: every 1.5-4 min a short NCPD dispatch shows bottom left; cpScan() shows one now
+try { (() => {
   // Districts and subdistricts as listed on the Night City map; category labels follow the game's scanner hustle types
   const PLACES = [
     ['City Center', ['Corpo Plaza', 'Downtown']], ['Heywood', ['Wellsprings', 'Vista del Rey', 'The Glen']],
@@ -324,17 +384,20 @@
     ['Watson', ['Little China', 'Kabuki', 'Northside', 'Arasaka Waterfront']], ['Westbrook', ['Japantown', 'North Oak', 'Charter Hill']],
   ];
   const CATS = {
-    a: ['Assault in Progress', ['Armed subject threatening bystanders', 'Fight outside a noodle stand', 'Gang members harassing a street vendor', 'Civilian attacked near a transit stop']],
-    r: ['Reported Crime', ['Break-in at a pawn shop', 'Stolen vehicle reported', 'Cyberware theft reported', 'Vandalism on a public billboard', 'Missing delivery drone']],
-    o: ['Suspected Organized Crime Activity', ['Suspected gang meeting in a vacant warehouse', 'Suspected black-market cargo at the loading docks', 'Suspected braindance distribution ring', 'Suspected protection racket at a market stall']],
-    c: ['Cyberpsycho Sighting', ['Erratic augmented subject, civilians evacuating', 'Unregistered cyberware, possible psychosis']],
+    a: ['Assault in Progress', ['Armed subject threatening bystanders', 'Fight outside a noodle stand', 'Gang members harassing a street vendor', 'Civilian attacked near a transit stop', 'Shots reported inside a parking structure', 'Courier mugged for a cargo case']],
+    r: ['Reported Crime', ['Break-in at a pawn shop', 'Stolen vehicle reported', 'Cyberware theft reported', 'Vandalism on a public billboard', 'Missing delivery drone', 'Smashed window at a ripperdoc clinic', 'Pickpocket working a night market']],
+    o: ['Suspected Organized Crime Activity', ['Suspected gang meeting in a vacant warehouse', 'Suspected black-market cargo at the loading docks', 'Suspected braindance distribution ring', 'Suspected protection racket at a market stall', 'Suspected data courier handoff behind a laundromat', 'Suspected chop shop operating from a garage']],
+    c: ['Cyberpsycho Sighting', ['Erratic augmented subject, civilians evacuating', 'Unregistered cyberware, possible psychosis', 'Subject tearing out street lights with bare hands', 'Heavily modified subject ignoring all commands', 'Augmented subject barricaded in a stairwell']],
+    s: ['Suspicious Activity', ['Unmarked van idling outside a clinic for hours', 'Stranger photographing a corporate entrance', 'Drone circling a residential block without a signal', 'Person testing door handles along an alley', 'Abandoned bag left at a transit stop', 'Hooded figure tampering with a vending terminal']],
+    t: ['Traffic Incident', ['Autonomous cab stopped in a live lane', 'Two-vehicle collision blocking an intersection', 'Motorcycle weaving through traffic at speed', 'Stalled truck leaking coolant on the overpass']],
+    p: ['Public Disturbance', ['Crowd forming around a street preacher', 'Loud argument spilling out of a bar', 'Unlicensed street race gathering', 'Street performers blocking a market entrance']],
   };
   const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
   let cur = null;
   const show = () => {
     if (cur) cur.remove();
     const lv = window.cpLevel || 0;
-    const key = Math.random() < (lv >= 2 ? 0.5 : 0.08) ? 'c' : pick(['a', 'a', 'r', 'r', 'o']);
+    const key = Math.random() < (lv >= 2 ? 0.5 : 0.08) ? 'c' : pick(['a', 'a', 'r', 'r', 'o', 's', 's', 't', 'p']);
     const [label, subjects] = CATS[key];
     const [district, subs] = pick(PLACES);
     const d = document.createElement('div'); d.className = 'cp-scan cp-scan-' + key;
@@ -342,17 +405,55 @@
     const loc = document.createElement('div'); loc.className = 'l'; loc.textContent = `${pick(subs)}, ${district}`;
     const body = document.createElement('div'); body.className = 'b';
     body.textContent = key === 'c' ? `${pick(subjects)}. MaxTac notified.` : `${pick(subjects)}. Units in ${district}, respond.`;
-    d.append(head, loc, body);
+    const foot = document.createElement('div'); foot.className = 'f';
+    foot.textContent = `CASE #${Math.floor(100000 + Math.random() * 900000)} // UNIT ${Math.floor(1 + Math.random() * 40)}-${pick(['A', 'B', 'C', 'D'])} // PRIORITY ${key === 'c' ? 1 : key === 'a' ? 2 : 3}`;
+    d.append(head, loc, body, foot);
     document.body.appendChild(d); cur = d;
-    setTimeout(() => d.remove(), 7000);
+    setTimeout(() => d.classList.add('out'), 6300);
+    setTimeout(() => d.remove(), 7200);
   };
   window.cpScan = show;
-  const loop = () => setTimeout(() => { if (!document.hidden) show(); loop(); }, (4 + Math.random() * 5) * 60000);
-  setTimeout(() => { if (!document.hidden) show(); loop(); }, (1 + Math.random()) * 60000);
-})();
+  const loop = () => setTimeout(() => { if (!document.hidden) show(); loop(); }, (1.5 + Math.random() * 2.5) * 60000);
+  setTimeout(() => { if (!document.hidden) show(); loop(); }, (0.5 + Math.random() * 0.5) * 60000);
+})(); } catch (e) { console.error("[cp-fx]", e); }
+
+// Status bar ticker: a new character line every 30 s, set in the widest empty gap of the status bar (hidden when the gap is under 260 px); cpTick() swaps now
+try { (() => {
+  const EVERY = 30000, MIN = 260;
+  const el = document.createElement('div'); el.className = 'cp-ticker';
+  const n = document.createElement('span'); n.className = 'n';
+  const q = document.createElement('span'); q.className = 'q';
+  el.append(n, q); document.body.appendChild(el);
+  const next = () => {
+    const c = window.cpQuote();
+    el.classList.add('out');
+    setTimeout(() => { n.textContent = c.querySelector('.n').textContent; q.textContent = c.querySelector('.q').textContent; el.classList.remove('out'); }, 260);
+  };
+  window.cpTick = next;
+  let dbg = 'not run';
+  const placeRaw = () => {
+    const bar = document.querySelector('.part.statusbar');
+    if (!bar || document.hidden) { el.style.display = 'none'; return; }
+    const b = bar.getBoundingClientRect();
+    const items = Array.from(bar.querySelectorAll('.statusbar-item')).map((i) => i.getBoundingClientRect()).filter((r) => r.width > 0);
+    const edges = [b.left, ...items.flatMap((r) => [r.left, r.right]), b.right].sort((x, y) => x - y);
+    let best = [0, 0];
+    for (let i = 0; i + 1 < edges.length; i += 2) if (edges[i + 1] - edges[i] > best[1] - best[0]) best = [edges[i], edges[i + 1]];
+    dbg = JSON.stringify({ best, items: items.length });
+    if (best[1] - best[0] < MIN) { el.style.display = 'none'; return; }
+    el.style.cssText = `display:block;left:${best[0] + 12}px;width:${best[1] - best[0] - 24}px;top:${b.top}px;height:${b.height}px;line-height:${b.height}px;`;
+  };
+  const place = () => { try { placeRaw(); } catch (e) { dbg = 'ERR ' + e.message; console.error('[cp-fx] place', e); } };
+  // cpDebug() in the dev console: where the ticker thinks it goes
+  window.cpDebug = () => JSON.stringify({ place: dbg, ticker: el.style.display, rect: el.getBoundingClientRect().toJSON() });
+  setInterval(place, 1000);
+  try { next(); } catch (e) { console.error('[cp-fx] ticker', e); }
+  setInterval(next, EVERY);
+  window.addEventListener('resize', place);
+})(); } catch (e) { console.error("[cp-fx]", e); }
 
 // Typing overclock: a burst of fast typing tints the active editor line; clears 500 ms after you ease off
-(() => {
+try { (() => {
   const WINDOW = 1000, NEED = 7, COOLDOWN = 500;
   let times = [], off = null, cur = null;
   document.addEventListener('keydown', (e) => {
@@ -368,10 +469,10 @@
       off = setTimeout(() => { if (cur) cur.classList.remove('cp-fast'); cur = null; }, COOLDOWN);
     }
   }, { passive: true });
-})();
+})(); } catch (e) { console.error("[cp-fx]", e); }
 
 // Upload complete on save, cyberpsychosis warning when errors go up, and the rare relic malfunction
-(() => {
+try { (() => {
   // DOM building only: VS Code's Trusted Types policy rejects innerHTML strings
   const mk = (tag, cls, text) => { const d = document.createElement(tag); if (cls) d.className = cls; if (text) d.textContent = text; return d; };
   const el = (cls, ...kids) => { const d = mk('div', cls); kids.forEach((k) => d.appendChild(k)); document.body.appendChild(d); return d; };
@@ -426,4 +527,4 @@
   };
   const relicLoop = () => setTimeout(() => { if (!document.hidden) window.cpRelic(); relicLoop(); }, (90 + Math.random() * 60) * 60000);
   relicLoop();
-})();
+})(); } catch (e) { console.error("[cp-fx]", e); }

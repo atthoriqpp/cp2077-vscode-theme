@@ -109,6 +109,27 @@
   box-shadow: 0 0 22px color-mix(in srgb, var(--cp-cyan) 28%, transparent) !important;
 }
 
+/* Kiroshi scan: hover tooltips get a cyan edge and a scan line that sweeps down once as they open */
+.monaco-workbench .monaco-hover {
+  box-shadow: inset 2px 0 0 var(--cp-cyan), 0 0 22px color-mix(in srgb, var(--cp-cyan) 28%, transparent) !important;
+}
+.monaco-workbench .monaco-hover::after {
+  content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px; pointer-events: none; z-index: 5;
+  background: linear-gradient(90deg, transparent, var(--cp-cyan), transparent);
+  animation: cp-hover-sweep 0.45s ease-out 1 both;
+}
+@keyframes cp-hover-sweep { from { top: 0; opacity: 1; } to { top: 100%; opacity: 0; } }
+
+/* Incoming transmission: notification toasts get a yellow edge and a message header row */
+.monaco-workbench .notification-toast {
+  box-shadow: inset 3px 0 0 var(--cp-yellow), 0 0 22px color-mix(in srgb, var(--cp-cyan) 28%, transparent) !important;
+}
+.monaco-workbench .notification-toast::before {
+  content: "// INCOMING MESSAGE"; display: block; padding: 6px 10px 4px 14px;
+  font: 9px/12px "Share Tech Mono", Consolas, monospace; letter-spacing: 0.22em; color: var(--cp-cyan);
+  background: linear-gradient(90deg, var(--cp-yellow), var(--cp-cyan) 40%, transparent) top left / 100% 2px no-repeat, #0A0A0E;
+}
+
 /* Quickhack deck: the palette's own header row wraps, and its first line is the tag (in normal flow, so nothing can cover it) */
 .monaco-workbench .quick-input-widget .quick-input-header { flex-wrap: wrap; }
 .monaco-workbench .quick-input-widget .quick-input-header::before {
@@ -178,6 +199,36 @@
   background:
     repeating-linear-gradient(0deg, color-mix(in srgb, var(--cp-cyan) 4%, transparent) 0 1px, transparent 1px 42px),
     repeating-linear-gradient(90deg, color-mix(in srgb, var(--cp-cyan) 4%, transparent) 0 1px, transparent 1px 42px);
+}
+
+/* Logo watermark: faint glitching title behind the code, bottom right, two short bursts per 8s loop. The text layer is made transparent so the pseudo behind it shows. */
+.monaco-editor .lines-content.monaco-editor-background { background: transparent !important; }
+.part.editor .monaco-editor .overflow-guard > .editor-scrollable { container-type: size; isolation: isolate; }
+.part.editor .monaco-editor .overflow-guard > .editor-scrollable::before {
+  content: "NIGHT CITY OS";
+  position: absolute;
+  right: 170px; /* clears the minimap and scrollbar, which sit on top of this layer */
+  bottom: 1%;
+  pointer-events: none;
+  font: 700 min(7cqw, 18cqh, 110px)/1.2 Rajdhani, Bahnschrift, sans-serif;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  color: color-mix(in srgb, var(--cp-yellow) 9%, transparent);
+  animation: cp-wm-loop 8s steps(1, end) infinite;
+}
+.monaco-workbench.cp-busy .part.editor .monaco-editor .overflow-guard > .editor-scrollable::before { animation: none; }
+@keyframes cp-wm-loop {
+  0%, 100% { transform: none; clip-path: inset(-30px); text-shadow: none; }
+  58% { transform: translateX(-6px); clip-path: inset(12% 0 58% 0); text-shadow: 5px 0 color-mix(in srgb, var(--cp-red) 14%, transparent), -5px 0 color-mix(in srgb, var(--cp-cyan) 14%, transparent); }
+  59% { transform: translateX(8px); clip-path: inset(62% 0 10% 0); text-shadow: -6px 0 color-mix(in srgb, var(--cp-red) 14%, transparent), 6px 0 color-mix(in srgb, var(--cp-cyan) 14%, transparent); }
+  60% { transform: translateX(-3px); clip-path: inset(30% 0 40% 0); text-shadow: 4px 0 color-mix(in srgb, var(--cp-red) 14%, transparent), -4px 0 color-mix(in srgb, var(--cp-cyan) 14%, transparent); }
+  61% { transform: none; clip-path: inset(-30px); text-shadow: none; }
+  86% { transform: translateX(5px); clip-path: inset(45% 0 30% 0); text-shadow: -5px 0 color-mix(in srgb, var(--cp-red) 14%, transparent), 5px 0 color-mix(in srgb, var(--cp-cyan) 14%, transparent); }
+  87% { transform: translateX(-7px); clip-path: inset(5% 0 75% 0); text-shadow: 6px 0 color-mix(in srgb, var(--cp-red) 14%, transparent), -6px 0 color-mix(in srgb, var(--cp-cyan) 14%, transparent); }
+  88% { transform: none; clip-path: inset(-30px); text-shadow: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .part.editor .monaco-editor .overflow-guard > .editor-scrollable::before { animation: none; }
 }
 
 /* 4. Typing overclock: fast typing tints the active line (class toggled by cyberpunk-fx.js) */
@@ -329,10 +380,10 @@
 /* Standby tag over the idle data rain */
 .cp-standby {
   position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 5; pointer-events: none;
-  font: 14px "Share Tech Mono", Consolas, monospace; letter-spacing: 0.3em; color: var(--cp-cyan); text-shadow: 0 0 10px var(--cp-cyan);
-  padding: 6px 16px; background: rgba(5, 5, 8, 0.8); border: 1px solid color-mix(in srgb, var(--cp-cyan) 60%, transparent);
-  animation: cp-blink 1.6s steps(2) infinite;
+  padding: 10px 22px 12px; background: rgba(5, 5, 8, 0.82); border: 1px solid color-mix(in srgb, var(--cp-cyan) 60%, transparent);
+  display: flex; flex-direction: column; align-items: center;
 }
+.cp-standby .t { font: 14px "Share Tech Mono", Consolas, monospace; letter-spacing: 0.3em; color: var(--cp-cyan); text-shadow: 0 0 10px var(--cp-cyan); animation: cp-blink 1.6s steps(2) infinite; }
 
 /* Neon flicker: title or active tab label stutters like a failing sign (steps, so it snaps) */
 .cp-neon { animation: cp-neon-flick 0.95s steps(1, end) 1; }
@@ -342,22 +393,61 @@
   30% { opacity: 0.6; text-shadow: none; }
 }
 
+/* Status bar ticker: a character line in the widest empty gap of the status bar (positioned by cyberpunk-fx.js) */
+.cp-ticker {
+  position: fixed; display: none; z-index: 50; pointer-events: none; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  font-family: "Share Tech Mono", Consolas, monospace; font-size: 11px; text-align: center;
+  transition: opacity 0.25s steps(3);
+}
+.cp-ticker.out { opacity: 0; }
+.cp-ticker .n { font-size: 10px; letter-spacing: 0.18em; color: var(--cp-cyan); margin-right: 10px; }
+.cp-ticker .q { color: #8FA3B0; }
+
 /* Scanner chatter: a short NCPD dispatch, bottom left above the status bar */
 .cp-scan {
   position: fixed; left: 12px; bottom: 32px; z-index: 99990; pointer-events: none; max-width: 380px;
   padding: 6px 12px 7px; background: rgba(5, 5, 8, 0.93); border-left: 3px solid var(--cp-yellow);
   clip-path: polygon(0 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%);
   font-family: "Share Tech Mono", Consolas, monospace;
-  animation: cp-scan-in 0.2s steps(3) 1, cp-scan-out 0.3s steps(3) 6.7s forwards;
+  animation: cp-scan-in 0.2s ease-out 1; will-change: opacity, transform;
 }
 .cp-scan .h { font-size: 10px; letter-spacing: 0.14em; color: var(--cp-yellow); }
 .cp-scan .l { font-size: 12px; color: var(--cp-cyan); margin: 2px 0; }
 .cp-scan .b { font-size: 11px; color: #C8C8D0; line-height: 1.35; }
+.cp-scan .f { font-size: 9px; letter-spacing: 0.1em; color: #6B7A86; margin-top: 3px; }
+.cp-scan-t { border-left-color: var(--cp-cyan); } .cp-scan-t .h { color: var(--cp-cyan); }
 .cp-scan-a { border-left-color: var(--cp-red); } .cp-scan-a .h { color: var(--cp-red); }
 .cp-scan-o { border-left-color: #FF2BD6; } .cp-scan-o .h { color: #FF2BD6; }
 .cp-scan-c { border-left-color: var(--cp-red); } .cp-scan-c .h { color: var(--cp-red); animation: cp-blink 0.9s steps(2) infinite; }
 @keyframes cp-scan-in { from { opacity: 0; transform: translateX(-14px); } to { opacity: 1; transform: none; } }
-@keyframes cp-scan-out { to { opacity: 0; transform: translateX(-14px); } }
+/* Fade out: linear tween through many close keyframes (smooth), with quick flicker dips, a sideways jitter and a red/cyan split on the text, ending as a collapsing scan line */
+.cp-scan.out { transform-origin: left center; animation: cp-scan-glitch-out 0.9s linear forwards; }
+.cp-scan.out .h, .cp-scan.out .l, .cp-scan.out .b, .cp-scan.out .f { animation: cp-scan-split 0.9s linear forwards; }
+@keyframes cp-scan-glitch-out {
+  0% { opacity: 1; transform: none; }
+  8% { opacity: 1; transform: translateX(2px); }
+  12% { opacity: 0.55; transform: translateX(-7px) skewX(9deg); }
+  16% { opacity: 1; transform: translateX(3px) skewX(-3deg); }
+  28% { opacity: 0.92; transform: translateX(0); }
+  34% { opacity: 0.35; transform: translateX(9px) skewX(-11deg); }
+  38% { opacity: 0.85; transform: translateX(-4px) skewX(4deg); }
+  50% { opacity: 0.7; transform: translateX(-8px); }
+  56% { opacity: 0.18; transform: translateX(13px) skewX(12deg) scaleY(0.9); }
+  62% { opacity: 0.55; transform: translateX(-6px) skewX(0); }
+  76% { opacity: 0.4; transform: translateX(-12px) scaleY(0.7); }
+  88% { opacity: 0.35; transform: translateX(-10px) scaleY(0.06); }
+  100% { opacity: 0; transform: translateX(-16px) scaleY(0); }
+}
+@keyframes cp-scan-split {
+  0%, 8% { text-shadow: none; }
+  12% { text-shadow: -4px 0 var(--cp-red), 4px 0 var(--cp-cyan); }
+  18%, 30% { text-shadow: none; }
+  34% { text-shadow: 6px 0 var(--cp-red), -6px 0 var(--cp-cyan); }
+  42%, 52% { text-shadow: none; }
+  56% { text-shadow: -8px 0 var(--cp-red), 8px 0 var(--cp-cyan); }
+  66% { text-shadow: 2px 0 var(--cp-red), -2px 0 var(--cp-cyan); }
+  100% { text-shadow: -10px 0 var(--cp-red), 10px 0 var(--cp-cyan); }
+}
 
 /* Kiroshi scanner: corner brackets and a SCANNING tag on the hovered explorer row */
 .explorer-folders-view .monaco-list-row:hover {
@@ -411,11 +501,16 @@
   position: fixed; inset: 0; z-index: 100000; pointer-events: none; background: #050507;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
   font-family: "Rajdhani SemiBold", "Bahnschrift", sans-serif; color: var(--cp-yellow);
-  animation: cp-boot-out 0.35s ease-in 1.5s 1 forwards;
+  animation: cp-boot-out 0.35s ease-in 2.6s 1 forwards;
 }
 .cp-boot .t { font-size: 22px; letter-spacing: 0.22em; text-shadow: -2px 0 var(--cp-red), 2px 0 var(--cp-cyan); animation: cp-upload-in 0.18s steps(3) 1; }
 .cp-boot .s { font-family: "Share Tech Mono", Consolas, monospace; font-size: 12px; letter-spacing: 0.14em; color: var(--cp-cyan); }
-.cp-boot .bar { width: 240px; height: 2px; background: var(--cp-yellow); transform-origin: left; animation: cp-fill 1.2s ease-out 1; }
+.cp-boot .bar { width: 240px; height: 2px; background: var(--cp-yellow); transform-origin: left; animation: cp-fill 2.2s ease-out 1; }
+/* Loading-screen line card (boot splash and standby) */
+.cp-quote { margin-top: 14px; max-width: 460px; text-align: center; animation: cp-quote-in 0.4s steps(4) 1; }
+.cp-quote .n { font: 10px/14px "Share Tech Mono", Consolas, monospace; letter-spacing: 0.22em; color: var(--cp-cyan); }
+.cp-quote .q { margin-top: 4px; font: 15px/20px "Rajdhani SemiBold", "Bahnschrift", sans-serif; letter-spacing: 0.04em; color: #E6E6EA; }
+@keyframes cp-quote-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes cp-boot-out { to { opacity: 0; visibility: hidden; } }
 
 /* Sandevistan engaged tag */
@@ -425,4 +520,15 @@
   font-family: "Rajdhani SemiBold", "Bahnschrift", sans-serif; font-size: 14px; letter-spacing: 0.12em;
   clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
   animation: cp-upload-in 0.18s steps(3) 1;
+}
+
+/* Selection: a cyan underline on every other match of the selected text, so partial picks like SEL in SELECT stand out */
+.monaco-editor .selectionHighlight { box-shadow: inset 0 -3px 0 var(--cp-cyan), 0 0 8px color-mix(in srgb, var(--cp-cyan) 55%, transparent); }
+.monaco-editor .selected-text { box-shadow: inset 0 0 0 1px var(--cp-yellow), 0 0 10px color-mix(in srgb, var(--cp-yellow) 55%, transparent); }
+
+/* REC dot: the extension shows a filled dot only while Claude works; this makes it breathe (smooth fade and glow) instead of swapping glyphs */
+.statusbar-item[id*="nc.rec"] .codicon-circle-filled { animation: cp-rec-pulse 1.6s ease-in-out infinite; }
+@keyframes cp-rec-pulse {
+  0%, 100% { opacity: 1; text-shadow: 0 0 6px var(--cp-red); }
+  50% { opacity: 0.25; text-shadow: none; }
 }
