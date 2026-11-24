@@ -496,7 +496,21 @@ try { (() => {
     const m = p && p.textContent.match(/\d+/);
     return m ? +m[0] : null;
   };
+  // Flatline: an ECG line draws left to right above the status bar, goes flat, turns red
+  let flat = null;
+  const showFlat = () => {
+    if (flat) flat.remove();
+    const NS = 'http://www.w3.org/2000/svg', bar = document.querySelector('.part.statusbar');
+    flat = mk('div', 'cp-flat'); flat.style.top = (bar ? bar.getBoundingClientRect().top - 44 : window.innerHeight - 70) + 'px';
+    const svg = document.createElementNS(NS, 'svg'); svg.setAttribute('viewBox', '0 0 1000 40'); svg.setAttribute('preserveAspectRatio', 'none');
+    const p = document.createElementNS(NS, 'path');
+    p.setAttribute('d', 'M0 20H150l10-5 8 5H250l8 7 12-27 12 36 8-16H360l14-9 14 9H520l8 7 12-27 12 36 8-16H640l10-3 8 3H760H1000');
+    svg.appendChild(p); flat.append(svg, mk('div', 't', 'VITALS // FLATLINE')); document.body.appendChild(flat);
+    const me = flat; setTimeout(() => me.remove(), 2700);
+  };
+  window.cpFlat = showFlat;
   const showPsycho = (n) => {
+    showFlat();
     if (psycho) psycho.remove();
     psycho = el('cp-psycho', mk('div', 'tag', `SYS WARNING // ${n} ERROR${n === 1 ? '' : 'S'}`));
     const me = psycho; setTimeout(() => me.remove(), 1700);
@@ -527,4 +541,48 @@ try { (() => {
   };
   const relicLoop = () => setTimeout(() => { if (!document.hidden) window.cpRelic(); relicLoop(); }, (90 + Math.random() * 60) * 60000);
   relicLoop();
+})(); } catch (e) { console.error("[cp-fx]", e); }
+
+// Ripperdoc install bar: while an extension installs (the Extensions list shows an "Installing" action) a cyan strip sweeps the top of the window, then INSTALL COMPLETE; cpRip() shows it for 4 s
+try { (() => {
+  let bar = null, label = null, was = false, off = 0, fake = 0;
+  const installing = () => fake > Date.now() || Array.from(document.querySelectorAll('.extension-action.installing')).some((e) => e.offsetParent !== null);
+  window.cpRip = () => { fake = Date.now() + 4000; };
+  setInterval(() => {
+    const on = installing();
+    if (on && !bar) {
+      bar = document.createElement('div'); bar.className = 'cp-rip';
+      label = document.createElement('div'); label.className = 't'; label.textContent = 'RIPPERDOC // INSTALLING CYBERWARE';
+      bar.appendChild(label); document.body.appendChild(bar);
+    }
+    off = on ? 0 : off + 1;
+    if (!on && bar && off >= 3) { // gone for 1.5 s: the install finished
+      const me = bar; bar = null;
+      me.classList.add('done'); label.textContent = 'RIPPERDOC // INSTALL COMPLETE';
+      setTimeout(() => me.remove(), 1700);
+    }
+  }, 500);
+})(); } catch (e) { console.error("[cp-fx]", e); }
+
+// Street cred level-up: the nc-district extension flips a hidden status item to "L<level>/<stamp>"; show a centred level-up card; cpLvl(n) previews level n
+try { (() => {
+  const mk = (tag, cls, text) => { const d = document.createElement(tag); d.className = cls; if (text) d.textContent = text; return d; };
+  const show = (lv) => {
+    document.querySelectorAll('.cp-lvl, .cp-lvl-scrim').forEach((e) => e.remove());
+    const scrim = mk('div', 'cp-lvl-scrim'), wrap = mk('div', 'cp-lvl'), card = mk('div', 'card'), n = mk('div', 'n');
+    n.append(mk('span', 'o', String(lv - 1)), mk('span', 'w', String(lv)));
+    card.append(mk('div', 'k', 'STREET CRED'), n, mk('div', 'u', 'LEVEL UP'), mk('div', 's', 'RESPECT EARNED // NIGHT CITY TAKES NOTICE'));
+    wrap.appendChild(card); document.body.append(scrim, wrap);
+    setTimeout(() => { scrim.remove(); wrap.remove(); }, 3500);
+  };
+  window.cpLvl = (n) => show(n || 2);
+  let last = null;
+  setInterval(() => {
+    const el = Array.from(document.querySelectorAll('.part.statusbar .statusbar-item')).find((e) => e.id && e.id.indexOf('nc.lvl') !== -1);
+    if (!el) return;
+    el.style.width = '0'; el.style.padding = '0'; el.style.margin = '0'; el.style.overflow = 'hidden';
+    const t = el.textContent.trim(), m = /L(\d+)\//.exec(t);
+    if (last !== null && t !== last && m) show(+m[1]);
+    last = t;
+  }, 500);
 })(); } catch (e) { console.error("[cp-fx]", e); }

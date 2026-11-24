@@ -48,6 +48,11 @@ function activate(context) {
   cred.color = '#FCEE0A';
   cred.show();
 
+  const sig = mkItem('nc.lvl', -200);
+  sig.name = 'Street Cred Level Signal';
+  sig.text = '​';
+  sig.show();
+
   let xp = Number(context.globalState.get('nc.xp', 0)) || 0;
   let lv = lvOf(xp), dirty = false, busy = false, since = 0, n = 0, last = Date.now();
   const today = () => new Date().toLocaleDateString('en-CA');
@@ -57,7 +62,7 @@ function activate(context) {
   const addXp = (v) => {
     xp += v; dirty = true;
     const l = lvOf(xp);
-    if (l > lv) { lv = l; vscode.window.showInformationMessage('STREET CRED // LEVEL ' + l); }
+    if (l > lv) { lv = l; sig.text = '​L' + l + '/' + Date.now(); } // cyberpunk-fx.js watches this hidden item and shows the level-up card
   };
 
   const draw = () => {
@@ -89,7 +94,7 @@ function activate(context) {
   const timer = setInterval(tick, 1000);
 
   context.subscriptions.push(
-    item, rec, cred,
+    item, rec, cred, sig,
     { dispose: () => { clearInterval(timer); if (dirty) { context.globalState.update('nc.xp', xp); context.globalState.update('nc.day', day); } } },
     vscode.workspace.onDidChangeWorkspaceFolders(update),
     vscode.workspace.onDidSaveTextDocument((d) => { if (d.uri.scheme === 'file') { day.saves++; addXp(10); } }),

@@ -38,6 +38,8 @@ This is a fan project. It is not affiliated with or endorsed by CD Projekt Red. 
 - **Neon flicker:** now and then the title or the active tab label stutters like a failing neon sign.
 - **Link restored:** coming back to the window after 3 seconds or more away sweeps a thin cyan bar across the top.
 - **Scanner chatter:** every 1.5 to 4 minutes a short NCPD dispatch shows bottom left, with a case number, unit and priority. Categories include assault, reported crime, organized crime, cyberpsycho, suspicious activity, traffic and public disturbance. Districts follow the Night City map and the sentences are original. At instability level 2 or higher many become cyberpsycho sightings. The card fades out with a short glitch. Run `cpScan()` to see one now.
+- **Flatline:** when the error count goes up, a green ECG line draws above the status bar, goes flat and turns red. Run `cpFlat()` to see it now.
+- **Ripperdoc install bar:** while an extension installs, a cyan strip sweeps the top of the window, then shows `INSTALL COMPLETE`. It watches for the "Installing" button in the Extensions list, so it only works while that list or an extension page is open. Run `cpRip()` to preview it.
 - **Character lines:** 36 short original lines credited to Night City archetypes. One shows under the boot splash, one rotates on the idle screen, and one changes every 30 seconds in the status bar gap. Run `cpTick()` to change the status bar one now.
 
 **Claude Code extras**
@@ -80,7 +82,7 @@ Copy `extensions/nc-district/` to `~/.vscode/extensions/nc-district/` and restar
 
 - `DISTRICT // <NAME>`: one of the six Night City districts, picked from your open folder's name. With no folder open it shows Badlands.
 - `REC hh:mm:ss`: how long Claude has worked for you today. It counts only while Claude is busy, so it needs the hook from step 2. The dot pulses while it counts. It resets each day.
-- `CRED LV n`: street cred. XP comes from finished Claude turns (40 plus 1 per 3 seconds, up to 120), saves (10) and typing (0.2 per key). Level n needs 200 x n x (n - 1) XP. A level-up shows as a notification.
+- `CRED LV n`: street cred. XP comes from finished Claude turns (40 plus 1 per 3 seconds, up to 120), saves (10) and typing (0.2 per key). Level n needs 200 x n x (n - 1) XP. A level-up shows a centred card with the old level sliding into the new one; run `cpLvl(5)` to preview it. The extension signals it through a hidden status bar item, and the effects script draws the card.
 
 The extension only reads the flag file and your editor events, and keeps its numbers in VS Code's own storage. It sends nothing anywhere.
 

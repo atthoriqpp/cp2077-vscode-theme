@@ -532,3 +532,50 @@
   0%, 100% { opacity: 1; text-shadow: 0 0 6px var(--cp-red); }
   50% { opacity: 0.25; text-shadow: none; }
 }
+
+/* Flatline: ECG line above the status bar when errors go up (cyberpunk-fx.js adds .cp-flat for 2.7 s) */
+.cp-flat { position: fixed; left: 0; right: 0; height: 40px; z-index: 60; pointer-events: none; animation: cp-flat-life 2.6s linear forwards; }
+.cp-flat svg { display: block; width: 100%; height: 100%; filter: drop-shadow(0 0 4px currentColor); animation: cp-flat-reveal 1.5s linear forwards; }
+.cp-flat path { fill: none; stroke: currentColor; stroke-width: 2; vector-effect: non-scaling-stroke; }
+.cp-flat .t { position: absolute; right: 16px; top: 0; font: 10px/14px "Share Tech Mono", Consolas, monospace; letter-spacing: 0.25em; color: var(--cp-red); opacity: 0; animation: cp-flat-tag 2.6s linear forwards; }
+@keyframes cp-flat-life { 0% { color: #3CFF8A; opacity: 1; } 58% { color: #3CFF8A; } 72% { color: var(--cp-red); opacity: 1; } 88% { opacity: 1; } 100% { color: var(--cp-red); opacity: 0; } }
+@keyframes cp-flat-reveal { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes cp-flat-tag { 0%, 58% { opacity: 0; } 60%, 100% { opacity: 1; } }
+
+/* Ripperdoc install bar: a strip along the top of the window while an extension installs */
+.cp-rip { position: fixed; left: 0; right: 0; top: 0; height: 3px; z-index: 3000; pointer-events: none; background: color-mix(in srgb, var(--cp-cyan) 18%, transparent); overflow: visible; }
+.cp-rip::after { content: ""; position: absolute; top: 0; bottom: 0; width: 25%; background: linear-gradient(90deg, transparent, var(--cp-cyan), transparent); box-shadow: 0 0 8px var(--cp-cyan); animation: cp-rip-sweep 1.1s linear infinite; }
+.cp-rip .t { position: absolute; top: 5px; left: 50%; transform: translateX(-50%); padding: 3px 16px; white-space: nowrap; font: 10px/14px "Share Tech Mono", Consolas, monospace; letter-spacing: 0.25em; color: var(--cp-cyan); background: rgba(10, 10, 14, 0.94); clip-path: polygon(0 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%); }
+.cp-rip.done { background: var(--cp-yellow); box-shadow: 0 0 10px var(--cp-yellow); }
+.cp-rip.done::after { display: none; }
+.cp-rip.done .t { color: var(--cp-yellow); }
+@keyframes cp-rip-sweep { from { left: -25%; } to { left: 100%; } }
+
+/* Street cred level-up: centred card (cyberpunk-fx.js adds .cp-lvl for 3.5 s). Layout and text are original, inspired by RPG level-up banners */
+.cp-lvl-scrim { position: fixed; inset: 0; z-index: 2900; pointer-events: none; background: radial-gradient(ellipse at center, transparent 25%, rgba(0, 0, 0, 0.5)); animation: cp-lvl-scrim 3.4s linear forwards; }
+.cp-lvl { position: fixed; left: 50%; top: 40%; z-index: 3001; width: 440px; max-width: 90vw; pointer-events: none; filter: drop-shadow(0 0 18px color-mix(in srgb, var(--cp-yellow) 30%, transparent)); animation: cp-lvl-card 3.4s linear forwards; }
+.cp-lvl .card { padding: 14px 24px 16px; text-align: center; background: rgba(8, 8, 12, 0.94); clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 18px 100%, 0 calc(100% - 18px));
+  background-image: linear-gradient(90deg, transparent, var(--cp-yellow) 20%, var(--cp-yellow) 80%, transparent), linear-gradient(90deg, transparent, var(--cp-cyan) 20%, var(--cp-cyan) 80%, transparent);
+  background-size: 100% 2px, 100% 2px; background-position: top, bottom; background-repeat: no-repeat; }
+.cp-lvl .k { font: 11px/16px "Share Tech Mono", Consolas, monospace; letter-spacing: 0.4em; color: var(--cp-cyan); }
+.cp-lvl .n { display: grid; place-items: center; height: 104px; overflow: hidden; font: 700 92px/104px Rajdhani, Bahnschrift, sans-serif; color: var(--cp-yellow); }
+.cp-lvl .n span { grid-area: 1 / 1; }
+.cp-lvl .n .o { opacity: 1; animation: cp-lvl-old 3.4s linear forwards; }
+.cp-lvl .n .w { opacity: 0; text-shadow: 0 0 22px color-mix(in srgb, var(--cp-yellow) 70%, transparent); animation: cp-lvl-new 3.4s linear forwards; }
+.cp-lvl .u { font: 700 22px/28px Rajdhani, Bahnschrift, sans-serif; letter-spacing: 0.5em; padding-left: 0.5em; color: #fff; animation: cp-lvl-up 3.4s linear forwards; }
+.cp-lvl .s { margin-top: 6px; font: 10px/14px "Share Tech Mono", Consolas, monospace; letter-spacing: 0.18em; color: #8FA3B0; }
+@keyframes cp-lvl-scrim { 0% { opacity: 0; } 8% { opacity: 1; } 84% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes cp-lvl-card {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(1.1, 0.02); }
+  5% { opacity: 1; transform: translate(-50%, -50%) scale(1.1, 0.02); }
+  12% { transform: translate(calc(-50% - 6px), -50%) scale(1, 1.05); }
+  16% { transform: translate(calc(-50% + 4px), -50%) scale(1); }
+  20%, 84% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  88% { opacity: 0.5; transform: translate(calc(-50% + 9px), -50%) skewX(-8deg); }
+  91% { opacity: 1; transform: translate(calc(-50% - 5px), -50%) skewX(4deg); }
+  96% { opacity: 0.3; transform: translate(-50%, -50%) scale(1, 0.06); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1, 0); }
+}
+@keyframes cp-lvl-old { 0%, 24% { opacity: 1; transform: none; } 36%, 100% { opacity: 0; transform: translateY(-46px); } }
+@keyframes cp-lvl-new { 0%, 24% { opacity: 0; transform: translateY(46px); } 36% { opacity: 1; transform: none; text-shadow: -6px 0 var(--cp-red), 6px 0 var(--cp-cyan); } 42%, 100% { opacity: 1; transform: none; } }
+@keyframes cp-lvl-up { 0%, 30% { opacity: 0; letter-spacing: 1em; } 46%, 100% { opacity: 1; letter-spacing: 0.5em; } }
