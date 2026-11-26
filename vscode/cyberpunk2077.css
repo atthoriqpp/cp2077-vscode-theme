@@ -553,31 +553,142 @@
 .cp-rip.done .t { color: var(--cp-yellow); }
 @keyframes cp-rip-sweep { from { left: -25%; } to { left: 100%; } }
 
-/* Street cred level-up: centred card (cyberpunk-fx.js adds .cp-lvl for 3.5 s). Layout and text are original, inspired by RPG level-up banners */
-.cp-lvl-scrim { position: fixed; inset: 0; z-index: 2900; pointer-events: none; background: radial-gradient(ellipse at center, transparent 25%, rgba(0, 0, 0, 0.5)); animation: cp-lvl-scrim 3.4s linear forwards; }
-.cp-lvl { position: fixed; left: 50%; top: 40%; z-index: 3001; width: 440px; max-width: 90vw; pointer-events: none; filter: drop-shadow(0 0 18px color-mix(in srgb, var(--cp-yellow) 30%, transparent)); animation: cp-lvl-card 3.4s linear forwards; }
-.cp-lvl .card { padding: 14px 24px 16px; text-align: center; background: rgba(8, 8, 12, 0.94); clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 18px 100%, 0 calc(100% - 18px));
+/* Street cred level-up: centred card (cyberpunk-fx.js adds .cp-lvl for 4.1 s). In and out are stepped glitch bursts like the NIGHT CITY OS logo: scan line flash, sliced clip bands, sideways jumps, red/cyan split, a number swap that flickers, a sweeping bar. Text is original */
+.cp-lvl-scrim { position: fixed; inset: 0; z-index: 2900; pointer-events: none; background: radial-gradient(ellipse at center, transparent 25%, rgba(0, 0, 0, 0.5)); animation: cp-lvl-scrim 4s steps(1, end) forwards; }
+.cp-lvl { position: fixed; left: 50%; top: 40%; z-index: 3001; width: 440px; max-width: 90vw; pointer-events: none; opacity: 0; filter: drop-shadow(0 0 18px color-mix(in srgb, var(--cp-yellow) 30%, transparent)); animation: cp-lvl-card 4s steps(1, end) forwards; }
+.cp-lvl .card { position: relative; padding: 14px 24px 16px; text-align: center; background: rgba(8, 8, 12, 0.94); clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 18px 100%, 0 calc(100% - 18px));
   background-image: linear-gradient(90deg, transparent, var(--cp-yellow) 20%, var(--cp-yellow) 80%, transparent), linear-gradient(90deg, transparent, var(--cp-cyan) 20%, var(--cp-cyan) 80%, transparent);
   background-size: 100% 2px, 100% 2px; background-position: top, bottom; background-repeat: no-repeat; }
+.cp-lvl .card::after { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 9px; opacity: 0; background: linear-gradient(transparent, color-mix(in srgb, var(--cp-cyan) 38%, transparent), transparent); animation: cp-lvl-bar 4s steps(1, end) forwards; }
 .cp-lvl .k { font: 11px/16px "Share Tech Mono", Consolas, monospace; letter-spacing: 0.4em; color: var(--cp-cyan); }
 .cp-lvl .n { display: grid; place-items: center; height: 104px; overflow: hidden; font: 700 92px/104px Rajdhani, Bahnschrift, sans-serif; color: var(--cp-yellow); }
 .cp-lvl .n span { grid-area: 1 / 1; }
-.cp-lvl .n .o { opacity: 1; animation: cp-lvl-old 3.4s linear forwards; }
-.cp-lvl .n .w { opacity: 0; text-shadow: 0 0 22px color-mix(in srgb, var(--cp-yellow) 70%, transparent); animation: cp-lvl-new 3.4s linear forwards; }
-.cp-lvl .u { font: 700 22px/28px Rajdhani, Bahnschrift, sans-serif; letter-spacing: 0.5em; padding-left: 0.5em; color: #fff; animation: cp-lvl-up 3.4s linear forwards; }
+.cp-lvl .n .o { animation: cp-lvl-old 4s steps(1, end) forwards; }
+.cp-lvl .n .w { opacity: 0; animation: cp-lvl-new 4s steps(1, end) forwards; }
+.cp-lvl .u { font: 700 22px/28px Rajdhani, Bahnschrift, sans-serif; letter-spacing: 0.5em; padding-left: 0.5em; color: #fff; opacity: 0; animation: cp-lvl-up 4s steps(1, end) forwards; }
 .cp-lvl .s { margin-top: 6px; font: 10px/14px "Share Tech Mono", Consolas, monospace; letter-spacing: 0.18em; color: #8FA3B0; }
-@keyframes cp-lvl-scrim { 0% { opacity: 0; } 8% { opacity: 1; } 84% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes cp-lvl-scrim { 0% { opacity: 0; } 4% { opacity: 1; } 6% { opacity: 0.3; } 8% { opacity: 1; } 86% { opacity: 1; } 90% { opacity: 0.4; } 92% { opacity: 1; } 95% { opacity: 0.3; } 98% { opacity: 0; } 100% { opacity: 0; } }
 @keyframes cp-lvl-card {
-  0% { opacity: 0; transform: translate(-50%, -50%) scale(1.1, 0.02); }
-  5% { opacity: 1; transform: translate(-50%, -50%) scale(1.1, 0.02); }
-  12% { transform: translate(calc(-50% - 6px), -50%) scale(1, 1.05); }
-  16% { transform: translate(calc(-50% + 4px), -50%) scale(1); }
-  20%, 84% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-  88% { opacity: 0.5; transform: translate(calc(-50% + 9px), -50%) skewX(-8deg); }
-  91% { opacity: 1; transform: translate(calc(-50% - 5px), -50%) skewX(4deg); }
-  96% { opacity: 0.3; transform: translate(-50%, -50%) scale(1, 0.06); }
-  100% { opacity: 0; transform: translate(-50%, -50%) scale(1, 0); }
+  0% { transform: translate(calc(-50% + 0px), -50%); clip-path: inset(-40px); opacity: 0; }
+  2% { transform: translate(calc(-50% + 0px), -50%) scale(1.15, 0.015); clip-path: inset(-40px); opacity: 1; }
+  4% { transform: translate(calc(-50% + 0px), -50%); clip-path: inset(-40px); opacity: 0; }
+  6% { transform: translate(calc(-50% + 10px), -50%) scale(1.15, 0.02); clip-path: inset(-40px); opacity: 1; }
+  8% { transform: translate(calc(-50% + -12px), -50%) scale(1, 0.4); clip-path: inset(0 0 60% 0); opacity: 1; }
+  10% { transform: translate(calc(-50% + 14px), -50%) scale(1, 1.04); clip-path: inset(50% 0 10% 0); opacity: 1; }
+  12% { transform: translate(calc(-50% + -8px), -50%) skewX(8deg); clip-path: inset(20% 0 45% 0); opacity: 1; }
+  14% { transform: translate(calc(-50% + 5px), -50%); clip-path: inset(-40px); opacity: 0.4; }
+  16% { transform: translate(calc(-50% + 0px), -50%); clip-path: inset(-40px); opacity: 1; }
+  52% { transform: translate(calc(-50% + 7px), -50%); clip-path: inset(15% 0 60% 0); opacity: 1; }
+  53% { transform: translate(calc(-50% + -9px), -50%); clip-path: inset(60% 0 12% 0); opacity: 1; }
+  54% { transform: translate(calc(-50% + 0px), -50%); clip-path: inset(-40px); opacity: 1; }
+  70% { transform: translate(calc(-50% + -6px), -50%); clip-path: inset(35% 0 35% 0); opacity: 1; }
+  71% { transform: translate(calc(-50% + 8px), -50%); clip-path: inset(5% 0 80% 0); opacity: 1; }
+  72% { transform: translate(calc(-50% + 0px), -50%); clip-path: inset(-40px); opacity: 1; }
+  86% { transform: translate(calc(-50% + -10px), -50%) skewX(-8deg); clip-path: inset(8% 0 62% 0); opacity: 1; }
+  88% { transform: translate(calc(-50% + 14px), -50%); clip-path: inset(58% 0 8% 0); opacity: 1; }
+  90% { transform: translate(calc(-50% + 0px), -50%); clip-path: inset(-40px); opacity: 0.4; }
+  92% { transform: translate(calc(-50% + -16px), -50%); clip-path: inset(30% 0 40% 0); opacity: 1; }
+  94% { transform: translate(calc(-50% + 0px), -50%); clip-path: inset(-40px); opacity: 0; }
+  95% { transform: translate(calc(-50% + 0px), -50%) scale(1.15, 0.03); clip-path: inset(-40px); opacity: 1; }
+  97% { transform: translate(calc(-50% + 0px), -50%) scale(1.3, 0.01); clip-path: inset(-40px); opacity: 0.8; }
+  98% { transform: translate(calc(-50% + 0px), -50%); clip-path: inset(-40px); opacity: 0; }
+  100% { transform: translate(calc(-50% + 0px), -50%); clip-path: inset(-40px); opacity: 0; }
 }
-@keyframes cp-lvl-old { 0%, 24% { opacity: 1; transform: none; } 36%, 100% { opacity: 0; transform: translateY(-46px); } }
-@keyframes cp-lvl-new { 0%, 24% { opacity: 0; transform: translateY(46px); } 36% { opacity: 1; transform: none; text-shadow: -6px 0 var(--cp-red), 6px 0 var(--cp-cyan); } 42%, 100% { opacity: 1; transform: none; } }
-@keyframes cp-lvl-up { 0%, 30% { opacity: 0; letter-spacing: 1em; } 46%, 100% { opacity: 1; letter-spacing: 0.5em; } }
+@keyframes cp-lvl-bar {
+  0%, 15% { opacity: 0; top: 0; } 16% { opacity: 1; top: 10%; } 18% { top: 55%; } 20% { top: 90%; } 22% { opacity: 0; }
+  30% { opacity: 1; top: 40%; } 31% { top: 72%; } 32% { opacity: 0; }
+  86% { opacity: 1; top: 20%; } 88% { top: 70%; } 90% { top: 40%; } 92%, 100% { opacity: 0; }
+}
+@keyframes cp-lvl-old {
+  0%, 29% { opacity: 1; transform: none; text-shadow: none; }
+  30% { opacity: 1; transform: translateX(-8px); text-shadow: -5px 0 var(--cp-red), 5px 0 var(--cp-cyan); } 31% { opacity: 0; }
+  33% { opacity: 1; transform: translateX(6px); text-shadow: 6px 0 var(--cp-red), -6px 0 var(--cp-cyan); } 34% { opacity: 0; }
+  36% { opacity: 1; transform: translateX(-4px); text-shadow: -4px 0 var(--cp-red), 4px 0 var(--cp-cyan); } 37%, 100% { opacity: 0; }
+}
+@keyframes cp-lvl-new {
+  0%, 30% { opacity: 0; }
+  31% { opacity: 1; transform: translateX(10px); text-shadow: 7px 0 var(--cp-red), -7px 0 var(--cp-cyan); } 33% { opacity: 0; }
+  34% { opacity: 1; transform: translateX(-6px); text-shadow: -6px 0 var(--cp-red), 6px 0 var(--cp-cyan); } 36% { opacity: 0; }
+  37% { opacity: 1; transform: translateX(5px); text-shadow: 9px 0 var(--cp-red), -9px 0 var(--cp-cyan); }
+  39% { opacity: 1; transform: none; text-shadow: -3px 0 var(--cp-red), 3px 0 var(--cp-cyan); }
+  40%, 100% { opacity: 1; transform: none; text-shadow: 0 0 22px color-mix(in srgb, var(--cp-yellow) 70%, transparent); }
+}
+@keyframes cp-lvl-up {
+  0%, 39% { opacity: 0; } 40% { opacity: 1; text-shadow: -5px 0 var(--cp-red), 5px 0 var(--cp-cyan); } 41% { opacity: 0; } 42% { opacity: 1; text-shadow: 4px 0 var(--cp-red), -4px 0 var(--cp-cyan); } 44%, 100% { opacity: 1; text-shadow: none; }
+}
+
+/* News: a running text row under the status bar (cyberpunk-fx.js shrinks the layout by 22px and docks it) and a BREAKING popup box with a glitch in and out at random times; headlines are generated from the date */
+.cp-nrow { position: fixed; left: 0; right: 0; bottom: 0; height: 22px; z-index: 40; display: flex; align-items: stretch; pointer-events: none; overflow: hidden; background: #07070b; border-top: 1px solid color-mix(in srgb, var(--cp-yellow) 45%, transparent); }
+.cp-nrow i { flex: none; padding: 0 16px 0 10px; background: var(--cp-yellow); color: #000; font: 700 12px/21px Rajdhani, Bahnschrift, sans-serif; font-style: normal; letter-spacing: 0.2em; clip-path: polygon(0 0, 100% 0, calc(100% - 7px) 100%, 0 100%); }
+.cp-nrow b { flex: none; padding: 0 10px 0 8px; color: var(--cp-red); font: 700 10px/21px "Share Tech Mono", Consolas, monospace; letter-spacing: 0.14em; animation: cp-blink 1.4s steps(2) infinite; }
+.cp-nrow div { flex: 1; overflow: hidden; white-space: nowrap; font: 12px/21px "Share Tech Mono", Consolas, monospace; color: #8FE9F5; -webkit-mask-image: linear-gradient(90deg, transparent, #000 3%, #000 97%, transparent); mask-image: linear-gradient(90deg, transparent, #000 3%, #000 97%, transparent); }
+.cp-nrow .run { display: inline-block; animation: cp-news-tk 120s linear infinite; }
+@keyframes cp-news-tk { to { transform: translateX(-50%); } }
+
+.cp-news { position: fixed; right: 24px; top: 56px; z-index: 99991; width: 350px; height: 132px; pointer-events: none; padding: 8px; border-radius: 10px; border: 1px solid #2b2b3a; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7), 0 0 22px rgba(255, 0, 60, 0.3); background: linear-gradient(145deg, #1b1b25, #0a0a10); animation: cp-news-in 0.9s steps(1, end) 1; }
+.cp-news.out { animation: cp-news-out 0.9s steps(1, end) forwards; }
+.cp-news .scr { position: relative; height: 100%; display: flex; flex-direction: column; overflow: hidden; border-radius: 8px / 12px; background: #031014; padding: 6px 10px 0; box-shadow: inset 0 0 26px rgba(2, 215, 242, 0.35), inset 0 0 3px #000; animation: cp-news-wob 6s steps(1, end) infinite; }
+.cp-news .scr::before { content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none; background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.6) 0 1px, transparent 1px 3px); }
+.cp-news .sl { position: absolute; left: 0; right: 0; top: 0; height: 34px; z-index: 3; pointer-events: none; background: linear-gradient(transparent, rgba(2, 215, 242, 0.22), rgba(255, 255, 255, 0.1), transparent); animation: cp-news-scan 3.5s linear infinite; }
+.cp-news .nn { display: flex; justify-content: space-between; font: 700 11px/14px Rajdhani, Bahnschrift, sans-serif; letter-spacing: 0.2em; color: var(--cp-red); border-bottom: 1px solid rgba(255, 0, 60, 0.5); padding-bottom: 2px; text-shadow: 0 0 6px var(--cp-red); }
+.cp-news .nn b { animation: cp-blink 0.9s steps(2) infinite; }
+.cp-news .hd { margin-top: 6px; max-height: 40px; overflow: hidden; font: 700 19px/20px Rajdhani, Bahnschrift, sans-serif; color: #d8fbff; text-shadow: 2px 0 rgba(255, 0, 60, 0.7), -2px 0 rgba(2, 215, 242, 0.7); }
+.cp-news .bd { margin-top: 5px; font: 11px/14px "Share Tech Mono", Consolas, monospace; color: #6fd8e6; flex: 1; overflow: hidden; }
+@keyframes cp-news-scan { from { transform: translateY(-40px); } to { transform: translateY(140px); } }
+@keyframes cp-news-in {
+  0% { opacity: 0; transform: none; clip-path: inset(-20px); }
+  4% { opacity: 1; transform: scale(1.1, 0.02); }
+  8% { opacity: 0; transform: none; }
+  12% { opacity: 1; transform: translateX(14px) scale(1, 0.3); clip-path: inset(0 0 60% 0); }
+  20% { transform: translateX(-12px); clip-path: inset(55% 0 10% 0); }
+  30% { transform: translateX(8px) skewX(8deg); clip-path: inset(25% 0 45% 0); }
+  40% { opacity: 0.4; transform: none; clip-path: inset(-20px); }
+  50% { opacity: 1; }
+  70% { transform: translateX(-6px); clip-path: inset(10% 0 60% 0); }
+  74% { transform: none; clip-path: inset(-20px); }
+  100% { opacity: 1; transform: none; clip-path: inset(-20px); }
+}
+@keyframes cp-news-out {
+  0% { opacity: 1; transform: none; clip-path: inset(-20px); }
+  10% { transform: translateX(-10px) skewX(-8deg); clip-path: inset(8% 0 62% 0); }
+  20% { transform: translateX(14px); clip-path: inset(58% 0 8% 0); }
+  30% { opacity: 0.4; transform: none; clip-path: inset(-20px); }
+  40% { opacity: 1; transform: translateX(-16px); clip-path: inset(30% 0 40% 0); }
+  52% { opacity: 0; transform: none; clip-path: inset(-20px); }
+  58% { opacity: 1; transform: scale(1.15, 0.03); }
+  72% { opacity: 0.8; transform: scale(1.3, 0.01); }
+  80%, 100% { opacity: 0; transform: none; }
+}
+@keyframes cp-news-wob {
+  0%, 100% { transform: none; filter: none; }
+  42% { transform: translateX(-3px); filter: hue-rotate(40deg); }
+  43% { transform: translateX(4px); }
+  44% { transform: none; filter: none; }
+  80% { transform: translateX(3px) skewX(2deg); }
+  81% { transform: none; }
+}
+@media (prefers-reduced-motion: reduce) { .cp-news .scr, .cp-news .sl, .cp-nrow .run { animation: none; } }
+
+.cp-nrow.g div { animation: cp-nrow-g 0.42s steps(1, end); }
+.cp-nrow.g i { animation: cp-nrow-gi 0.42s steps(1, end); }
+@keyframes cp-nrow-g {
+  0% { transform: translateX(-8px); clip-path: inset(0 0 55% 0); text-shadow: 3px 0 var(--cp-red), -3px 0 var(--cp-cyan); }
+  20% { transform: translateX(10px); clip-path: inset(50% 0 0 0); text-shadow: -4px 0 var(--cp-red), 4px 0 var(--cp-cyan); }
+  40% { transform: none; clip-path: inset(0); text-shadow: none; opacity: 0.4; }
+  55% { opacity: 1; transform: translateX(-5px); text-shadow: 2px 0 var(--cp-red), -2px 0 var(--cp-cyan); }
+  75% { transform: none; text-shadow: none; }
+}
+@keyframes cp-nrow-gi { 0% { transform: translateX(3px); } 20% { transform: translateX(-3px); } 40%, 100% { transform: none; } }
+
+/* News row: category tags, market arrows, ad tag, and a red alert state while a BREAKING popup is up */
+.cp-nrow .tg { display: inline-block; margin-right: 7px; padding: 0 5px; font-size: 10px; font-weight: 700; letter-spacing: 0.12em; line-height: 14px; vertical-align: 1px; border: 1px solid currentColor; }
+.cp-nrow .tg.red { color: var(--cp-red); } .cp-nrow .tg.cyan { color: var(--cp-cyan); } .cp-nrow .tg.yel { color: var(--cp-yellow); }
+.cp-nrow .tg.mag { color: #FF2BD6; } .cp-nrow .tg.grn { color: #3CFF9A; } .cp-nrow .tg.stl { color: #8FA3B0; }
+.cp-nrow .tg.ad { color: #000; background: var(--cp-yellow); border-color: var(--cp-yellow); }
+.cp-nrow .bd2 { color: #C8F4FA; }
+.cp-nrow .sp { margin: 0 14px; color: #4a4a62; }
+.cp-nrow .up { margin: 0 9px 0 5px; color: #3CFF9A; } .cp-nrow .dn { margin: 0 9px 0 5px; color: var(--cp-red); }
+.cp-nrow.al { border-top-color: var(--cp-red); animation: cp-nrow-al 0.8s steps(2) infinite; }
+.cp-nrow.al i { background: var(--cp-red); color: #000; }
+.cp-nrow.al b { color: #fff; }
+@keyframes cp-nrow-al { 0% { background: rgba(255, 0, 60, 0.28); } 50% { background: #07070b; } }

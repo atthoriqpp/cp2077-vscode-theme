@@ -567,13 +567,26 @@ try { (() => {
 // Street cred level-up: the nc-district extension flips a hidden status item to "L<level>/<stamp>"; show a centred level-up card; cpLvl(n) previews level n
 try { (() => {
   const mk = (tag, cls, text) => { const d = document.createElement(tag); d.className = cls; if (text) d.textContent = text; return d; };
+  const GL = '#%&@$01/|<>=+*';
+  const decode = (el, text, start, dur) => { // random glyphs that resolve left to right
+    const rnd = (from) => text.split('').map((c, i) => (i < from || c === ' ' ? c : GL[Math.floor(Math.random() * GL.length)])).join('');
+    el.textContent = rnd(0);
+    setTimeout(() => {
+      const t0 = Date.now(), iv = setInterval(() => {
+        const p = (Date.now() - t0) / dur;
+        if (p >= 1 || !el.isConnected) { el.textContent = text; clearInterval(iv); } else el.textContent = rnd(Math.floor(p * text.length));
+      }, 40);
+    }, start);
+  };
   const show = (lv) => {
     document.querySelectorAll('.cp-lvl, .cp-lvl-scrim').forEach((e) => e.remove());
     const scrim = mk('div', 'cp-lvl-scrim'), wrap = mk('div', 'cp-lvl'), card = mk('div', 'card'), n = mk('div', 'n');
     n.append(mk('span', 'o', String(lv - 1)), mk('span', 'w', String(lv)));
-    card.append(mk('div', 'k', 'STREET CRED'), n, mk('div', 'u', 'LEVEL UP'), mk('div', 's', 'RESPECT EARNED // NIGHT CITY TAKES NOTICE'));
+    const k = mk('div', 'k'), u = mk('div', 'u'), s = mk('div', 's');
+    card.append(k, n, u, s);
     wrap.appendChild(card); document.body.append(scrim, wrap);
-    setTimeout(() => { scrim.remove(); wrap.remove(); }, 3500);
+    decode(k, 'STREET CRED', 600, 500); decode(u, 'LEVEL UP', 1600, 350); decode(s, 'RESPECT EARNED // NIGHT CITY TAKES NOTICE', 1700, 900);
+    setTimeout(() => { scrim.remove(); wrap.remove(); }, 4100);
   };
   window.cpLvl = (n) => show(n || 2);
   let last = null;
@@ -585,4 +598,162 @@ try { (() => {
     if (last !== null && t !== last && m) show(+m[1]);
     last = t;
   }, 500);
+})(); } catch (e) { console.error("[cp-fx]", e); }
+
+// News: a running text row under the status bar plus a rare BREAKING popup box. Headlines are built from original templates and slot lists, seeded by the local date, so each day reads differently; cpNews() shows a popup now, cpRow(false/true) hides or shows the row
+try { (() => {
+  const D = ['City Center', 'Heywood', 'Pacifica', 'Santo Domingo', 'Watson', 'Westbrook'];
+  const L = ['the docks', 'the rail yard', 'the neon strip', 'the arcade', 'canal road', 'the night market', 'the overpass', 'old harbor', 'the tower plaza', 'the bus depot'];
+  const G = ['Chrome Hounds', 'Neon Vipers', 'Rust Saints', 'Ash Wolves', 'Glass Jackals', 'Static Kings', 'Red Lanterns', 'Iron Moths'];
+  const C = ['Helix Dynamics', 'Orbital Freight', 'Kestrel Biotech', 'Sable Logistics', 'Vantage Media', 'Northgate Systems', 'Lumen Power', 'Halcyon Foods'];
+  const S = ['Medi-Drone', 'Noodle Express', 'Safe Cab', 'Deck Care', 'Chrome Check', 'Night Shield'];
+  const W = [['acid rain', 'rain'], ['thick fog', 'fog'], ['heat haze', 'heat'], ['strong winds', 'wind'], ['smog alert', 'smog'], ['cold snap', 'cold']];
+  const V = ['truck', 'cab', 'tram', 'drone carrier', 'water van', 'tow rig'];
+  const T = [
+    ['{G} claim {L} after late standoff', 'Patrols found {n} abandoned vehicles near {L}. No arrests yet. Residents are told to stay in after dark.'],
+    ['Police seal {L} for {n} hours', 'Officers closed the area after a tip about a stolen shipment. {D} traffic is rerouted.'],
+    ['{D} shops report protection racket', '{n} stalls say {G} demand weekly fees. Police say they are looking into it.'],
+    ['Chase ends at {L}', 'A speeding van linked to {G} hit a barrier. The driver fled on foot.'],
+    ['{G} and {G2} trade threats on the net', 'Both crews posted warnings in {D}. Local cops raise patrols for the weekend.'],
+    ['{C} opens new {D} campus', 'The firm promises {n} new jobs. Neighbours worry about rent and noise.'],
+    ['{C} shares drop after audit leak', 'Analysts say the leak shows missing funds. The firm calls it a clerical matter.'],
+    ['{C} recalls {n}00 units', 'A faulty battery pack may overheat. Customers can swap at any {D} outlet.'],
+    ['{C} sponsors free rides in {D}', 'Cabs run free until midnight with a logo on every door. Drivers like the tips.'],
+    ['{C} says delivery fleet back on time', 'After a week of delays, parcels reach {D} on schedule. Customers stay unconvinced.'],
+    ['{w0} across {D} tonight', 'Expect {w1} until late. Carry a coat and keep your gear sealed.'],
+    ['{w0} slows {D} streets', 'Visibility is poor near {L}. Drivers are told to slow down and keep lights on.'],
+    ['{L} jammed after {v} stalls', 'Delays of {n} minutes. Drivers are asked to use {L2} instead.'],
+    ['Tram line to {D} suspended', 'A power fault near {L} halts service. Shuttle buses run every {n} minutes.'],
+    ['Net outage hits {D}', 'Connections dropped for {n} minutes. Techs blame a cut line near {L}.'],
+    ['{C} pushes update to {n}K devices', 'Users report slower decks and new login screens. A fix is promised soon.'],
+    ['Free wifi trial opens in {D}', 'Coverage reaches {L}. Experts warn it logs more than it admits.'],
+    ['{D} night market draws record crowd', 'Over {n}00 visitors by midnight. Noodle stalls sold out within the hour.'],
+    ['New braindance arcade opens in {D}', 'Queues stretch around the block. Reviewers call the lights intense.'],
+    ['Street artist paints {n}-story mural in {D}', 'The wall near {L} shows a rainy skyline. Neighbours leave tips in a jar.'],
+    ['Live music returns to {L}', 'Three bands play until dawn. Noise complaints expected, earplugs on sale.'],
+    ['Clinics in {D} run on half staff', 'Wait times hit {n} hours. Officials promise extra crews by morning.'],
+    ['{S} adds {n} units to {D}', 'Faster pickup for plan holders. Everyone else waits for city cabs.'],
+    ['Flu wave reaches {D}', '{n} clinics report full waiting rooms. Doctors advise rest and clean air.'],
+    ['{D} racers set new lap record', '{n}:{m} on the harbor loop. Judges check the rules before confirming.'],
+    ['Cage fight at {L} sells out', 'The main bout lasted {m} seconds. Fans demand a rematch.'],
+    ['Rent up {n} percent in {D}', 'Tenant groups call it too much. Landlords cite rising power prices.'],
+    ['Gig work demand up in {D}', 'Couriers report {n} extra orders per shift. Pay stays flat.'],
+    ['Power prices climb for {D} blocks', '{C} blames fuel costs. Residents turn off lights and complain loudly.'],
+    ['Stray cat becomes {D} celebrity', 'A one-eyed cat asleep on a vending machine has {n}K followers.'],
+    ['Noodle stall near {L} wins best late snack', 'Locals vote it the city favorite for year {m}.'],
+    ['Rooftop garden grows in {D}', 'Volunteers plant {n} beds above {L}. Tomatoes are the first harvest.'],
+    ['Lost drone found on {L}', 'A parcel drone sat on a roof for {n} days. Its owner has been called.']
+  ];
+  const BIG = [
+    ['Blackout takes {D} dark', 'Power fails across {D}. Crews race to bring back {n} blocks before dawn. Stay off the streets near {L}.'],
+    ['Explosion rocks {L} in {D}', 'Smoke over {L}. Emergency crews are on scene. Avoid the area until further notice.'],
+    ['Standoff at {L}', 'Police surround a {G} hideout in {D}. Traffic is closed for {n} blocks around.'],
+    ['{C} tower evacuated in {D}', 'An alarm clears {n}00 workers into the rain. The firm blames a faulty sensor.'],
+    ['Superstorm shuts roads out of {D}', 'Wind and flooding close every route. Shelters open at {L}. Do not drive.'],
+    ['Drone swarm grounds all flights', 'A rogue fleet blocks the sky over {D}. {C} says its units are not involved.'],
+    ['Net outage in all six districts', 'Services are down city wide. Techs have no estimate. Cash only at most stalls.'],
+    ['{G} and {G2} war spills into {D}', 'Shots fired near {L}. Police urge everyone to shelter in place.'],
+    ['Water main bursts under {D}', 'Streets flood around {L}. Repair crews need {n} hours. Boil all tap water.'],
+    ['Mystery signal hijacks {D} screens', 'Every billboard in {D} shows static and one phrase. Technicians are tracing the source.']
+  ];
+  const A = ['AD: {S}: STAY COVERED, STAY ALIVE', 'AD: {C}: THE FUTURE RUNS ON US', 'AD: {S}: HERE IN {n} MINUTES OR THE NEXT RIDE IS FREE', 'AD: {C}: BUILT FOR THE CITY THAT NEVER SLEEPS', 'AD: {S} PLANS FROM {n}0 PER MONTH'];
+  const hash = (s) => { let h = 2166136261; for (const ch of s) h = Math.imul(h ^ ch.charCodeAt(0), 16777619); return h >>> 0; };
+  const rng = (seed) => () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+  const day = () => new Date().toLocaleDateString('en-CA');
+  const fill = (s, r) => {
+    const w = W[Math.floor(r() * W.length)], pk = (a) => a[Math.floor(r() * a.length)];
+    const g = pk(G); let g2 = pk(G); if (g2 === g) g2 = G[(G.indexOf(g) + 1) % G.length];
+    const l = pk(L); let l2 = pk(L); if (l2 === l) l2 = L[(L.indexOf(l) + 1) % L.length];
+    return s.replace('{G2}', g2).replace('{L2}', l2).replace(/[{]G[}]/g, g).replace(/[{]L[}]/g, l)
+      .replace(/[{]D[}]/g, () => pk(D)).replace(/[{]C[}]/g, () => pk(C)).replace(/[{]S[}]/g, () => pk(S)).replace(/[{]v[}]/g, () => pk(V))
+      .replace('{w0}', w[0]).replace('{w1}', w[1])
+      .replace(/[{]n[}]/g, () => 3 + Math.floor(r() * 94)).replace(/[{]m[}]/g, () => 2 + Math.floor(r() * 57));
+  };
+  const batch = (salt, n) => { // n distinct stories for this date and salt
+    const r = rng(hash(day() + salt)), out = [], seen = new Set();
+    for (let k = 0; out.length < n && k < n * 8; k++) {
+      const ti = Math.floor(r() * T.length), t = T[ti], f = fill(t[0] + "|" + t[1], r).split("|"), h = f[0].toUpperCase();
+      if (!seen.has(h)) { seen.add(h); out.push([h, f[1], CAT[ti]]); }
+    }
+    return out;
+  };
+  const mk = (tag, cls, text) => { const x = document.createElement(tag); x.className = cls; if (text) x.textContent = text; return x; };
+  const CAT = []; // one [tag, colour] per template in T, in order
+  [['CRIME', 5, 'red'], ['CORP', 5, 'cyan'], ['WEATHER', 2, 'stl'], ['TRAFFIC', 2, 'yel'], ['NET', 3, 'mag'], ['CULTURE', 4, 'mag'], ['HEALTH', 3, 'grn'], ['SPORT', 2, 'yel'], ['MONEY', 3, 'yel'], ['CITY', 4, 'stl']]
+    .forEach((c) => { for (let i = 0; i < c[1]; i++) CAT.push([c[0], c[2]]); });
+  const SYM = ['HLX', 'ORB', 'KST', 'SBL', 'VNT', 'NGS', 'LMN', 'HLC'];
+  const lf = (cls, text) => mk('span', 'lf ' + cls, text);
+  const fillRow = () => { // news with coloured tags, a made-up market segment every 8 stories, an ad every 5
+    sp.textContent = '';
+    const r = rng(hash(day() + 'ad')), news = batch('t', 30), ads = A.map((s) => fill(s, r).replace(/^AD: /, '').toUpperCase());
+    const add = (tag, tagCls, ...rest) => { const it = mk('span', 'it'); it.append(lf('tg ' + tagCls, tag), ...rest); sp.append(it, mk('span', 'sp', '//')); };
+    if (!news.length) news.push(['NIGHT CITY NEWS 24 STANDING BY', '', ['CITY', 'stl']]);
+    news.forEach((x, k) => {
+      add(x[2][0], x[2][1], lf('bd2', x[0]));
+      if (k % 5 === 4) add('AD', 'ad', lf('bd2', ads[(k / 5 | 0) % ads.length]));
+      if (k % 8 === 7) {
+        const pool = SYM.slice(), parts = [];
+        for (let n = 0; n < 4; n++) {
+          const s = pool.splice(Math.floor(r() * pool.length), 1)[0], v = r() * 9 - 4.5;
+          parts.push(lf('bd2', s), lf(v >= 0 ? 'up' : 'dn', (v >= 0 ? '\u25B2' : '\u25BC') + Math.abs(v).toFixed(1) + '%'));
+        }
+        add('MARKET', 'grn', ...parts);
+      }
+    });
+    Array.from(sp.childNodes).forEach((n) => sp.appendChild(n.cloneNode(true))); // second copy: the loop never shows an empty row
+  };
+
+  // running text row: the layout is told the window is 22px shorter, so the row sits free under the status bar; if the layout ignores that, the row stays off
+  const BH = 22, desc = Object.getOwnPropertyDescriptor(window, 'innerHeight');
+  const realH = () => desc.get.call(window);
+  const row = mk('div', 'cp-nrow'), run = mk('div', ''), sp = mk('span', 'run'), lab = mk('b', '', 'LIVE');
+  run.appendChild(sp); row.append(mk('i', '', 'NCN'), lab, run);
+  let shrink = false, rowDay = '';
+  const resize = () => window.dispatchEvent(new Event('resize'));
+  const setText = () => { rowDay = day(); fillRow(); sp.style.animationDuration = Math.round(sp.textContent.length * 0.11) + 's'; };
+  const rowOn = () => {
+    if (!desc || !desc.get || !desc.configurable) return;
+    Object.defineProperty(window, 'innerHeight', { configurable: true, get: () => realH() - (shrink ? BH : 0) });
+    shrink = true; resize();
+    setTimeout(() => {
+      const sb = document.querySelector('.part.statusbar'), r = sb && sb.getBoundingClientRect();
+      if (!r || r.bottom > realH() - BH + 3) { shrink = false; resize(); console.warn('[cp-fx] news row off: layout ignored the shorter window'); return; }
+      document.body.appendChild(row);
+    }, 900);
+  };
+  const rowOff = () => { shrink = false; row.remove(); resize(); };
+  setText();
+  let tries = 0;
+  const wait = setInterval(() => {
+    if (document.querySelector('.part.statusbar') && document.body) { clearInterval(wait); rowOn(); } else if (++tries > 60) clearInterval(wait);
+  }, 500);
+  setInterval(() => { if (rowDay !== day()) setText(); }, 30000);
+  // random glitch: about 8% of the characters turn to noise for a moment while the row jumps and splits
+  const GLY = '#%&@$01/|<>=+*';
+  const glitchRow = () => {
+    if (!row.isConnected) return;
+    const lv = Array.from(sp.querySelectorAll('.lf')), orig = lv.map((e) => e.textContent);
+    lv.forEach((e) => { e.textContent = orig[lv.indexOf(e)].split('').map((c) => (c !== ' ' && Math.random() < 0.08 ? GLY[Math.floor(Math.random() * GLY.length)] : c)).join(''); });
+    row.classList.add('g');
+    setTimeout(() => { lv.forEach((e, i) => { e.textContent = orig[i]; }); row.classList.remove('g'); }, 420);
+  };
+  const glLater = () => setTimeout(() => { glitchRow(); if (Math.random() < 0.3) setTimeout(glitchRow, 700); glLater(); }, 15000 + Math.random() * 60000);
+  glLater();
+  window.cpRow = (on) => { if (on === false) rowOff(); else if (!shrink) rowOn(); };
+
+  // BREAKING popup: a box with a glitch in and out at random times (first after 3-8 min, then every 20-45 min)
+  const box = mk('div', 'cp-news'), scr = mk('div', 'scr'), nn = mk('div', 'nn'), hd = mk('div', 'hd'), bd = mk('div', 'bd');
+  nn.append(mk('span', '', 'BREAKING // NIGHT CITY NEWS 24'), mk('b', '', 'LIVE')); scr.append(mk('div', 'sl'), nn, hd, bd); box.appendChild(scr);
+  let up = false;
+  const pop = () => {
+    if (up || !document.body) return; up = true;
+    const r = rng(hash(String(Date.now()))), t = BIG[Math.floor(r() * BIG.length)], f = fill(t[0] + '|' + t[1], r).split('|');
+    hd.textContent = f[0].toUpperCase(); bd.textContent = f[1];
+    box.className = 'cp-news'; document.body.appendChild(box); row.classList.add('al'); lab.textContent = 'BREAKING';
+    setTimeout(() => box.classList.add('out'), 9300);
+    setTimeout(() => { box.remove(); up = false; row.classList.remove('al'); lab.textContent = 'LIVE'; }, 10200);
+  };
+  const later = () => setTimeout(() => { pop(); later(); }, (20 + Math.random() * 25) * 60000);
+  setTimeout(() => { pop(); later(); }, (3 + Math.random() * 5) * 60000);
+  window.cpNews = pop;
 })(); } catch (e) { console.error("[cp-fx]", e); }
