@@ -1,4 +1,5 @@
 const every = (f, ms) => setInterval(() => { if (!document.hidden) f(); }, ms); // all effect timers pause while the window is hidden
+const cpStats = { t0: Date.now(), ice: 0, longest: 0, eb: 0 }; // session numbers for the standby lock screen: ICE runs, longest trace (s), fixer pay
 // Cyberpunk effects: mouse pointer trail, glitches, save and error HUD. Loaded by the Custom CSS and JS Loader.
 // Text cursor trail removed 2026-11-19 (too distracting when clicking around code); the mouse pointer trail stays.
 
@@ -206,7 +207,9 @@ try { (() => {
   let cv = null, ctx = null, host = null, tag = null, drops = [], w = 0, h = 0, last = 0, lastInput = Date.now();
   const stop = () => { if (cv) cv.remove(); if (tag) tag.remove(); cv = ctx = host = tag = null; };
   // mousemove counts here (wakes standby) but not for the humanity drift clock
-  ['keydown', 'mousedown', 'mousemove', 'wheel'].forEach((e) => document.addEventListener(e, () => {
+  ['keydown', 'mousedown', 'mousemove', 'wheel'].forEach((e) => document.addEventListener(e, (ev) => {
+    if (tag && (e === 'mousemove' || e === 'wheel')) return; // on standby only a click or a typed key wakes it, so alt tabbing or a nudge of the mouse does not
+    if (tag && e === 'keydown' && ['Alt', 'Tab', 'Control', 'Shift', 'Meta', 'OS'].includes(ev.key)) return;
     lastInput = Date.now();
     if (tag) stop();
   }, { passive: true, capture: true }));
@@ -215,6 +218,34 @@ try { (() => {
     const q = tag.querySelector('.cp-quote');
     if (q) q.replaceWith(window.cpQuote());
   }, 8000);
+  // lock screen part of the standby card: clock, date with a made-up weather line, session stats, a glitch slice every few seconds
+  const mkE = (tag, cls, text) => { const x = document.createElement(tag); if (cls) x.className = cls; if (text) x.textContent = text; return x; };
+  const two = (n) => String(n).padStart(2, '0'), mmss = (s) => two(Math.floor(s / 60)) + ':' + two(Math.floor(s % 60));
+  const SKY = ['RAIN', 'ACID RAIN', 'SMOG', 'FOG', 'CLEAR', 'STORM'];
+  let L = null;
+  const upd = () => {
+    if (!L) return; const n = new Date(), ct = n.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    L.clock.textContent = ct; L.sls.textContent = ct;
+    const seed = [...n.toLocaleDateString('en-CA')].reduce((a, c) => a + c.charCodeAt(0), 0);
+    L.date.textContent = n.toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short' }).replace(',', '').toUpperCase() + ' // NIGHT CITY // ' + (8 + seed % 14) + 'C ' + SKY[seed % SKY.length];
+    const s = (Date.now() - cpStats.t0) / 1000;
+    L.cells[0].textContent = two(Math.floor(s / 3600)) + ':' + two(Math.floor(s % 3600 / 60));
+    L.cells[1].textContent = cpStats.ice; L.cells[2].textContent = cpStats.longest ? mmss(cpStats.longest) : '--:--'; L.cells[3].textContent = cpStats.eb.toLocaleString('en-US');
+    L.hx.textContent = '0x' + Array.from({ length: 3 }, () => Math.floor(Math.random() * 65536).toString(16).toUpperCase().padStart(4, '0')).join(' ');
+  };
+  const lock = () => {
+    const lk = mkE('div', 'lk'), mid = mkE('div', 'mid'), box = mkE('div', 'cb'), clock = mkE('div', 'ck'), sl = mkE('div', 'sl'), sls = mkE('span', '');
+    sl.appendChild(sls); box.append(clock, sl); mid.appendChild(box);
+    const date = mkE('div', 'dt'), st = mkE('div', 'st'), cells = [];
+    ['SESSION', 'ICE RUNS', 'LONGEST TRACE', 'EB EARNED'].forEach((c, k) => { const dv = mkE('div', k === 3 ? 'y' : ''), b = mkE('b', ''); dv.append(b, mkE('span', '', c)); st.appendChild(dv); cells.push(b); });
+    const ft = mkE('div', 'ft'), hx = mkE('span', '', ''); ft.append(mkE('i', 'bc'), mkE('span', 'w', 'CLICK TO RE-LINK'), hx);
+    lk.append(mid, date, st, ft); L = { clock, sls, date, cells, hx }; upd(); return lk;
+  };
+  every(() => { // once a second: refresh the readouts, now and then a 170 ms glitch burst (class gl)
+    if (!tag) { L = null; return; }
+    upd();
+    if (Math.random() < 0.3) { tag.classList.add('gl'); const t = tag; setTimeout(() => t.classList.remove('gl'), 170); }
+  }, 1000);
   const findHost = () => {
     if (document.hidden) return null;
     const idle = Date.now() - lastInput > STANDBY && !document.querySelector('.monaco-workbench.cp-busy');
@@ -257,7 +288,8 @@ try { (() => {
       if (el.classList.contains('part')) { // standby: whole editor part
         tag = document.createElement('div'); tag.className = 'cp-standby';
         const title = document.createElement('div'); title.className = 't'; title.textContent = 'NEURAL LINK IDLE';
-        tag.append(title, window.cpQuote());
+        const hz = mkE('div', 'hz'), bar = mkE('div', 'bar'); bar.append(mkE('span', '', 'NCOS // SESSION LOCKED'), mkE('span', 'r', 'LINK IDLE'));
+        tag.append(hz, bar, title, window.cpQuote(), lock());
         document.body.appendChild(tag);
       }
       requestAnimationFrame(loop);
@@ -400,7 +432,7 @@ try { (() => {
     h.appendChild(cd);
     const bd = mk('div', 'bd', pick(GIG).replace('{p}', pick(PLACE)) + ' Pay: ' + pay.toLocaleString('en-US') + ' eb'), bt = mk('div', 'bt');
     const yes = mk('span', 'y', 'ACCEPT'), no = mk('span', 'n', 'DECLINE'), bar = mk('span', 'bar');
-    yes.addEventListener('click', () => { total += pay; close('GIG LOGGED // +' + pay.toLocaleString('en-US') + ' eb // TOTAL ' + total.toLocaleString('en-US') + ' eb'); });
+    yes.addEventListener('click', () => { total += pay; cpStats.eb = total; close('GIG LOGGED // +' + pay.toLocaleString('en-US') + ' eb // TOTAL ' + total.toLocaleString('en-US') + ' eb'); });
     no.addEventListener('click', () => close());
     bt.append(yes, no); c.append(h, who, bd, bt, bar); document.body.appendChild(c); card = c; stack();
     iv = every(() => {
@@ -443,6 +475,7 @@ try { (() => {
     if (Math.random() < P[lv]) burst();
   };
   const done = (sec) => {
+    cpStats.ice++; cpStats.longest = Math.max(cpStats.longest, sec);
     const c = card; c.className = 'cp-ice d'; tm.textContent = clock(sec); pc.textContent = 'OUT'; tx.textContent = 'JACKED OUT. CONNECTION CLEAN.'; ft.textContent = 'RAN ' + clock(sec); hx.textContent = 'SESSION CLOSED';
     segs.forEach((s) => { s.className = 'on'; }); burst(300);
     timers.push(setTimeout(() => c.classList.add('out'), 4000), setTimeout(() => { if (card === c) kill(); }, 4900));

@@ -876,3 +876,35 @@
 
 /* Terminal text down a few pixels: a plain margin (no transform, no script). The row count is computed from the box, not the margin, so no rows are lost; the 4px comes out of the empty strip under the last row */
 .monaco-workbench .terminal-xterm-host > .xterm { margin-top: 4px; }
+
+/* Standby lock screen (v3): the NEURAL LINK IDLE card keeps its header and quote and gains a frame, a clock, a date line, session stats and a glitch slice. Colour is held back: cyan base, yellow only on the eb value, red only on the link flag, glow and RGB split only on the clock */
+.cp-standby { width: 520px; padding: 0 0 12px; border: 0; background: rgba(5, 5, 8, 0.93); align-items: stretch; box-sizing: border-box;
+  clip-path: polygon(18px 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%, 0 18px); }
+.cp-standby::before { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 2; background:
+  linear-gradient(var(--cp-cyan), var(--cp-cyan)) 18px 0 / 60px 2px no-repeat, linear-gradient(var(--cp-cyan), var(--cp-cyan)) right 0 bottom 18px / 2px 60px no-repeat,
+  linear-gradient(var(--cp-cyan), var(--cp-cyan)) 0 18px / 2px 60px no-repeat, linear-gradient(var(--cp-cyan), var(--cp-cyan)) right 18px bottom 0 / 60px 2px no-repeat; }
+.cp-standby::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 3; background: repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 3px); }
+.cp-standby .hz { height: 7px; margin-left: 18px; background: repeating-linear-gradient(-45deg, var(--cp-yellow) 0 8px, #050508 8px 16px); }
+.cp-standby .bar { display: flex; justify-content: space-between; padding: 7px 20px 0; font: 10px "Share Tech Mono", Consolas, monospace; letter-spacing: 0.2em; color: var(--cp-cyan); }
+.cp-standby .bar .r { color: var(--cp-red); }
+.cp-standby .bar .r::before { content: "\25CF "; }
+.cp-standby .t { margin-top: 12px; text-align: center; font-size: 15px; letter-spacing: 0.32em; text-shadow: none; }
+.cp-standby .cp-quote { margin: 6px 20px 0; text-align: center; }
+.cp-standby .lk { margin: 12px 20px 0; padding-top: 12px; border-top: 1px solid #1d2a30; font-family: "Share Tech Mono", Consolas, monospace; }
+.cp-standby .mid { display: flex; justify-content: center; }
+.cp-standby .cb { position: relative; line-height: 1; }
+.cp-standby .ck { font-size: 64px; letter-spacing: 0.06em; color: var(--cp-cyan); text-shadow: 3px 0 rgba(255, 0, 60, 0.8), -3px 0 rgba(2, 215, 242, 0.7); }
+.cp-standby .sl { display: none; position: absolute; left: 0; right: 0; top: 20px; height: 12px; overflow: hidden; transform: translateX(14px); }
+.cp-standby .sl span { position: absolute; left: 0; top: -20px; font-size: 64px; letter-spacing: 0.06em; color: var(--cp-yellow); text-shadow: -3px 0 var(--cp-red); white-space: nowrap; }
+.cp-standby.gl .sl { display: block; }
+.cp-standby.gl { transform: translate(calc(-50% - 4px), -50%); }
+.cp-standby .dt { margin-top: 8px; text-align: center; font-size: 10px; letter-spacing: 0.24em; color: var(--cp-yellow); }
+.cp-standby .st { display: grid; grid-template-columns: repeat(4, 1fr); margin-top: 14px; border-top: 1px solid #1d2a30; }
+.cp-standby .st > div { padding: 9px 0 2px; text-align: center; border-left: 1px solid #1d2a30; }
+.cp-standby .st > div:first-child { border-left: 0; }
+.cp-standby .st b { display: block; font-weight: 400; font-size: 17px; color: #E6E6EA; }
+.cp-standby .st .y b { color: var(--cp-yellow); }
+.cp-standby .st span { font-size: 8px; letter-spacing: 0.16em; color: #6B7A86; }
+.cp-standby .ft { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; font-size: 9px; letter-spacing: 0.18em; color: #4a5560; }
+.cp-standby .ft .w { color: var(--cp-yellow); }
+.cp-standby .bc { width: 90px; height: 14px; background: repeating-linear-gradient(90deg, #8a9aa5 0 2px, transparent 2px 4px, #8a9aa5 4px 5px, transparent 5px 9px); }
