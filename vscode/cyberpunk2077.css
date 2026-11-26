@@ -874,5 +874,5 @@
     linear-gradient(to top, color-mix(in srgb, var(--cp-cyan) 9%, transparent), transparent 18px);
 }
 
-/* Terminal text down a few pixels: a plain margin (no transform, no script). The row count is computed from the box, not the margin, so no rows are lost; the 6px comes out of the empty strip under the last row */
-.monaco-workbench .terminal-xterm-host > .xterm { margin-top: 6px; }
+/* Terminal text down a few pixels: a plain margin (no transform, no script). The row count is computed from the box, not the margin, so no rows are lost; the 4px comes out of the empty strip under the last row */
+.monaco-workbench .terminal-xterm-host > .xterm { margin-top: 4px; }
