@@ -387,7 +387,7 @@ try { (() => {
   const SECS = 20;
   let card = null, iv = null, total = 0, lastInput = Date.now();
   for (const ev of ['keydown', 'pointerdown', 'mousemove']) window.addEventListener(ev, () => { lastInput = Date.now(); }, { passive: true });
-  const stack = () => { const s = document.querySelector('.cp-scan'); if (card) card.style.bottom = (32 + (s ? s.offsetHeight + 8 : 0)) + 'px'; }; // sits above the dispatch
+  const stack = () => { const s = document.querySelector('.cp-scan'), i = document.querySelector('.cp-ice'); if (card) card.style.bottom = (32 + (i ? i.offsetHeight + 8 : 0) + (s ? s.offsetHeight + 8 : 0)) + 'px'; }; // sits above the ICE card and the dispatch
   const close = (msg) => {
     if (!card) return; const c = card; card = null; clearInterval(iv);
     if (msg) { c.classList.remove('ring'); c.querySelector('.bd').textContent = msg; c.querySelector('.bt').remove(); c.querySelector('.cd').style.visibility = 'hidden'; card = c; stack(); }
@@ -415,6 +415,53 @@ try { (() => {
     loop(4, 4);
   }, (min + Math.random() * span) * 60000);
   loop(1, 1);
+})(); } catch (e) { console.error("[cp-fx]", e); }
+
+// ICE trace: while Claude works, a card bottom right fills one segment every 15 s (cyan, yellow, then red) with a percent readout, a hex stream and short glitch bursts that get more frequent as the trace nears done. It shows after 10 s of work, and on finish reads JACKED OUT with the real run time, then glitches out. Reads the cp-busy flag once a second; cpIce(s) shows a demo
+try { (() => {
+  const mk = (tag, cls, text) => { const x = document.createElement(tag); x.className = cls; if (text) x.textContent = text; return x; };
+  const T = { a: ['ROUTING THROUGH PROXY', 'NETWATCH SWEEP // LOW'], b: ['ICE ALERTED. KEEP MOVING.', 'NETWATCH SWEEP // MEDIUM'], c2: ['TRACE NEARLY COMPLETE', 'NETWATCH SWEEP // CRITICAL'] };
+  const P = { a: 0.1, b: 0.25, c2: 0.55 }; // chance of a glitch burst per second
+  const clock = (s) => String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(Math.floor(s % 60)).padStart(2, '0');
+  const hex = () => '0x' + Array.from({ length: 4 }, () => Math.floor(Math.random() * 65536).toString(16).toUpperCase().padStart(4, '0')).join(' ');
+  let card = null, segs = [], tm, pc, tx, ft, hx, t0 = 0, quiet = 0, timers = [];
+  const off = () => document.documentElement.style.setProperty('--cp-ice-off', card ? card.offsetHeight + 8 + 'px' : '0px'); // dispatch and fixer stack above this card
+  const kill = () => { timers.forEach(clearTimeout); timers = []; if (card) { card.remove(); card = null; } off(); };
+  const build = () => {
+    card = mk('div', 'cp-ice a'); const hd = mk('div', 'h'), mid = mk('div', 'mid'), sg = mk('div', 'segs');
+    tm = mk('b', '', '00:00'); hd.append(mk('span', '', '\u25B2 ICE TRACE'), tm);
+    pc = mk('span', 'pc', '00%'); segs = []; for (let k = 0; k < 10; k++) { const i = mk('i', ''); segs.push(i); sg.appendChild(i); }
+    mid.append(pc, sg); tx = mk('div', 's'); ft = mk('div', 'f'); hx = mk('div', 'x');
+    card.append(mk('div', 'st'), hd, mid, tx, ft, hx); document.body.appendChild(card);
+  };
+  const burst = (ms) => { card.classList.add('gl'); const c = card; timers.push(setTimeout(() => c.classList.remove('gl'), ms || 170)); };
+  const paint = (sec) => {
+    const lv = sec < 60 ? 'a' : sec < 135 ? 'b' : 'c2', n = Math.min(10, Math.floor(sec / 15) + 1);
+    card.className = 'cp-ice ' + lv; tm.textContent = clock(sec); tx.textContent = T[lv][0]; ft.textContent = T[lv][1];
+    pc.textContent = String(Math.min(99, Math.floor(sec / 150 * 100))).padStart(2, '0') + '%'; hx.textContent = hex();
+    segs.forEach((s, k) => { s.className = (k < n ? 'on' : '') + (lv === 'c2' && k === 9 ? ' bl' : ''); });
+    if (Math.random() < P[lv]) burst();
+  };
+  const done = (sec) => {
+    const c = card; c.className = 'cp-ice d'; tm.textContent = clock(sec); pc.textContent = 'OUT'; tx.textContent = 'JACKED OUT. CONNECTION CLEAN.'; ft.textContent = 'RAN ' + clock(sec); hx.textContent = 'SESSION CLOSED';
+    segs.forEach((s) => { s.className = 'on'; }); burst(300);
+    timers.push(setTimeout(() => c.classList.add('out'), 4000), setTimeout(() => { if (card === c) kill(); }, 4900));
+  };
+  every(() => {
+    const busy = !!document.querySelector('.monaco-workbench.cp-busy');
+    if (busy) {
+      quiet = 0;
+      if (!t0) t0 = Date.now();
+      if (card && card.classList.contains('d')) { kill(); t0 = Date.now(); } // work resumed before the card faded
+      const sec = (Date.now() - t0) / 1000;
+      if (sec >= 10) { if (!card) build(); paint(sec); }
+    } else if (t0 && ++quiet >= 2) { // 2 s of calm so a pause between steps does not end the run
+      const sec = (Date.now() - t0) / 1000 - 2; t0 = 0;
+      if (card) done(Math.max(sec, 0));
+    }
+    off();
+  }, 1000);
+  window.cpIce = (s) => { kill(); t0 = 0; build(); paint(s || 80); burst(); off(); }; // demo: cpIce(20), cpIce(80), cpIce(160); the card stays until the next call
 })(); } catch (e) { console.error("[cp-fx]", e); }
 
 // Status bar ticker: a new character line every 30 s, set in the widest empty gap of the status bar (hidden when the gap is under 260 px); cpTick() swaps now

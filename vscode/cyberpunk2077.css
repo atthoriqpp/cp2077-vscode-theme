@@ -818,3 +818,61 @@
 .cp-call .bt .n:hover { color: var(--cp-red); border-color: var(--cp-red); }
 .cp-call .bar { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--cp-cyan); transform-origin: left; transition: transform 1s linear; }
 .cp-call.out { animation: cp-scan-glitch-out 0.9s steps(1, end) forwards; }
+
+/* ICE trace: bottom right, above the status bar and news row. Segments change once a second; only the red last segment blinks (opacity, stepped) */
+.cp-ice {
+  position: fixed; right: 12px; bottom: 54px; z-index: 99991; width: 246px; pointer-events: none;
+  padding: 6px 12px 9px; background: rgba(5, 5, 8, 0.95); border-right: 3px solid var(--k, var(--cp-cyan));
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+  font-family: "Share Tech Mono", Consolas, monospace; animation: cp-ice-in 0.2s ease-out 1;
+}
+.cp-ice.a, .cp-ice.d { --k: var(--cp-cyan); } .cp-ice.b { --k: var(--cp-yellow); } .cp-ice.c2 { --k: var(--cp-red); }
+.cp-ice .h { display: flex; justify-content: space-between; font-size: 10px; letter-spacing: 0.14em; color: var(--k); }
+.cp-ice .h b { font-weight: 400; color: #C8C8D0; }
+.cp-ice .segs { display: flex; gap: 3px; margin: 7px 0 6px; }
+.cp-ice .segs i { flex: 1; height: 7px; background: #1a1f26; transform: skewX(-20deg); }
+.cp-ice .segs i.on { background: var(--k); box-shadow: 0 0 5px var(--k); }
+.cp-ice.d .segs i.on { background: #2b5a63; box-shadow: none; }
+.cp-ice .segs i.bl { animation: cp-blink 1s steps(2, end) infinite; }
+.cp-ice .s { font-size: 11px; color: #C8C8D0; line-height: 1.35; }
+.cp-ice.c2 .s { color: #ff7a96; }
+.cp-ice .f { font-size: 9px; letter-spacing: 0.1em; color: #6B7A86; margin-top: 4px; }
+@keyframes cp-ice-in { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: none; } }
+.cp-ice.out { animation: cp-scan-glitch-out 0.9s steps(1, end) forwards; }
+
+/* ICE trace v2: hazard stripe, big percent with an RGB split, scanlines, notched corners, hex stream, glitch bursts (class gl, set for about 170 ms, stepped) */
+.cp-ice { width: 264px; padding: 0 12px 8px; border-right: 0; border-left: 0; background: linear-gradient(rgba(5, 5, 8, 0.96), rgba(5, 5, 8, 0.96)); position: fixed; overflow: hidden;
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px); animation: cp-ice-in 0.35s steps(1, end) 1; }
+.cp-ice::before { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--k); opacity: 0.7; }
+.cp-ice::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 3px); }
+.cp-ice .st { height: 5px; margin: 0 -12px 5px; background: repeating-linear-gradient(-45deg, var(--k) 0 6px, #050508 6px 12px); opacity: 0.9; }
+.cp-ice .h { font-size: 10px; letter-spacing: 0.16em; color: var(--k); text-shadow: 0 0 6px color-mix(in srgb, var(--k) 70%, transparent); }
+.cp-ice .mid { display: flex; align-items: center; gap: 10px; margin: 5px 0 5px; }
+.cp-ice .pc { font-size: 26px; line-height: 1; min-width: 56px; color: var(--k); letter-spacing: 0.02em; text-shadow: 2px 0 rgba(255, 0, 60, 0.75), -2px 0 rgba(2, 215, 242, 0.75); }
+.cp-ice.c2 .pc { text-shadow: 2px 0 rgba(2, 215, 242, 0.8), -2px 0 rgba(252, 238, 10, 0.5); }
+.cp-ice .mid .segs { flex: 1; margin: 0; }
+.cp-ice .segs i { height: 12px; clip-path: polygon(0 0, 100% 0, calc(100% - 3px) 100%, 0 100%); transform: none; }
+.cp-ice .s { text-transform: uppercase; letter-spacing: 0.06em; color: #E4E4EA; }
+.cp-ice.c2 .s { color: var(--cp-red); animation: cp-blink 1s steps(2, end) infinite; }
+.cp-ice .x { font-size: 9px; letter-spacing: 0.12em; color: color-mix(in srgb, var(--k) 55%, #3a444c); margin-top: 3px; }
+.cp-ice.gl { transform: translateX(-4px); clip-path: polygon(10px 0, 100% 0, 100% 38%, calc(100% - 6px) 38%, calc(100% - 6px) 52%, 100% 52%, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px); }
+.cp-ice.gl .pc, .cp-ice.gl .h, .cp-ice.gl .s { text-shadow: 4px 0 var(--cp-red), -4px 0 var(--cp-cyan); }
+.cp-ice.gl .segs { transform: translateX(5px); }
+.cp-ice.gl .st { background: repeating-linear-gradient(-45deg, var(--cp-red) 0 6px, #050508 6px 12px); }
+.cp-ice.d .pc { font-size: 20px; }
+@keyframes cp-ice-in { 0% { opacity: 0; transform: translateX(18px); } 20% { opacity: 1; transform: translateX(-6px); clip-path: inset(30% 0 40% 0); } 40% { transform: translateX(4px); clip-path: inset(0 0 55% 0); } 60% { transform: translateX(-3px); clip-path: inset(50% 0 0 0); } 80% { transform: translateX(2px); } 100% { transform: none; } }
+
+/* ICE trace moved bottom left, lowest in the left stack; the dispatch rides above it (--cp-ice-off is set by the script) and the fixer call above both */
+.cp-ice { right: auto; left: 12px; bottom: 32px; }
+.cp-scan { bottom: calc(32px + var(--cp-ice-off, 0px)); }
+@keyframes cp-ice-in { 0% { opacity: 0; transform: translateX(-18px); } 20% { opacity: 1; transform: translateX(6px); clip-path: inset(30% 0 40% 0); } 40% { transform: translateX(-4px); clip-path: inset(0 0 55% 0); } 60% { transform: translateX(3px); clip-path: inset(50% 0 0 0); } 80% { transform: translateX(-2px); } 100% { transform: none; } }
+
+/* Terminal floor: the terminal draws whole rows, so a strip is left under the last row. A cyan hairline and a short glow on the bottom edge make that strip read as padding above a floor. Static, background only (the busy heartbeat uses box-shadow, so they do not clash) */
+.monaco-workbench .terminal-wrapper {
+  background-image:
+    linear-gradient(to top, color-mix(in srgb, var(--cp-cyan) 50%, transparent) 0 1px, transparent 1px),
+    linear-gradient(to top, color-mix(in srgb, var(--cp-cyan) 9%, transparent), transparent 18px);
+}
+
+/* Terminal text down a few pixels: a plain margin (no transform, no script). The row count is computed from the box, not the margin, so no rows are lost; the 6px comes out of the empty strip under the last row */
+.monaco-workbench .terminal-xterm-host > .xterm { margin-top: 6px; }
