@@ -1,3 +1,4 @@
+const every = (f, ms) => setInterval(() => { if (!document.hidden) f(); }, ms); // all effect timers pause while the window is hidden
 // Cyberpunk effects: mouse pointer trail, glitches, save and error HUD. Loaded by the Custom CSS and JS Loader.
 // Text cursor trail removed 2026-11-19 (too distracting when clicking around code); the mouse pointer trail stays.
 
@@ -30,7 +31,7 @@ try { (() => {
     return m ? +m[0] : 0;
   };
   window.cpStage = (n) => { forced = n; setTimeout(() => { forced = null; }, 30000); }; // dev console test: cpStage(3) holds level 3 for 30 s
-  setInterval(() => {
+  every(() => {
     const wb = document.querySelector('.monaco-workbench');
     if (!wb) return;
     const now = Date.now();
@@ -125,7 +126,7 @@ try { (() => {
     }
     was = on;
   };
-  setInterval(tick, 500);
+  every(tick, 500);
   // Esc in the terminal while busy = interrupt (Stop hook does not fire): treat this flag stamp as over until a new prompt rewrites it
   document.addEventListener('keydown', (e) => {
     if (e.key !== 'Escape' || stamp === null) return;
@@ -201,7 +202,7 @@ try { (() => {
 try { (() => {
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   const GLYPHS = 'ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿ0123456789ABCDEF<>/|=+*';
-  const SIZE = 16, FRAME = 70, STANDBY = 3 * 60000; // FRAME: ms between steps, about 14 fps
+  const SIZE = 16, FRAME = 120, STANDBY = 3 * 60000; // FRAME: ms between steps, about 14 fps
   let cv = null, ctx = null, host = null, tag = null, drops = [], w = 0, h = 0, last = 0, lastInput = Date.now();
   const stop = () => { if (cv) cv.remove(); if (tag) tag.remove(); cv = ctx = host = tag = null; };
   // mousemove counts here (wakes standby) but not for the humanity drift clock
@@ -209,7 +210,7 @@ try { (() => {
     lastInput = Date.now();
     if (tag) stop();
   }, { passive: true, capture: true }));
-  setInterval(() => { // loading-screen style: a new line every 8 s while on standby
+  every(() => { // loading-screen style: a new line every 8 s while on standby
     if (!tag) return;
     const q = tag.querySelector('.cp-quote');
     if (q) q.replaceWith(window.cpQuote());
@@ -225,6 +226,7 @@ try { (() => {
     if (!cv) return;
     requestAnimationFrame(loop);
     if (t - last < FRAME) return;
+    if (Date.now() - lastInput > 600000) return; // frozen on the last frame until you come back
     last = t;
     const r = host.getBoundingClientRect();
     if (!host.isConnected || r.width < 2 || r.height < 2) { stop(); return; }
@@ -244,7 +246,7 @@ try { (() => {
       drops[i] = (y * SIZE > h && Math.random() > 0.96) ? -Math.random() * 10 : y + 1;
     });
   };
-  setInterval(() => {
+  every(() => {
     const el = findHost();
     if (cv && el !== host) stop();
     if (el && !cv) {
@@ -269,7 +271,7 @@ try { (() => {
   let key = null, ln = null, ed = null, off = null, nav = 0;
   // plain PageUp/PageDown/arrow travel is not a jump
   document.addEventListener('keydown', (e) => { if (/^(Page|Arrow)/.test(e.key)) nav = Date.now(); }, { passive: true, capture: true });
-  setInterval(() => {
+  every(() => {
     const sel = document.querySelector('[id="status.editor.selection"]');
     const m = sel && sel.textContent.match(/(\d+)/);
     const tab = document.querySelector('.editor-group-container.active .tab.active');
@@ -326,53 +328,6 @@ try { (() => {
     setTimeout(hit, 25000 + Math.random() * 45000);
   };
   setTimeout(hit, 9000);
-})(); } catch (e) { console.error("[cp-fx]", e); }
-
-// City rain: faint cyan streaks over the editor, denser at night by the real clock; cpRain(false) turns it off for good, cpRain(true) back on
-try { (() => {
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  const KEY = 'cp-rain', FRAME = 33;
-  window.cpRain = (on) => { localStorage.setItem(KEY, on ? '1' : '0'); };
-  let cv = null, ctx = null, host = null, drops = [], w = 0, h = 0, last = 0;
-  const density = () => { const hr = new Date().getHours(); return hr >= 19 || hr < 5 ? 1 : hr >= 17 || hr < 7 ? 0.8 : 0.6; };
-  const stop = () => { if (cv) cv.remove(); cv = ctx = host = null; };
-  const loop = (t) => {
-    if (!cv) return;
-    requestAnimationFrame(loop);
-    if (t - last < FRAME) return;
-    last = t;
-    const r = host.getBoundingClientRect();
-    if (!host.isConnected || r.width < 2 || r.height < 2) { stop(); return; }
-    if (Math.round(r.width) !== w || Math.round(r.height) !== h) {
-      w = Math.round(r.width); h = Math.round(r.height); cv.width = w; cv.height = h;
-      const n = Math.min(220, Math.round(w * h / 12000 * density()));
-      drops = Array.from({ length: n }, () => ({ x: Math.random() * (w + 60), y: Math.random() * h, len: 10 + Math.random() * 14, v: 14 + Math.random() * 10, far: Math.random() < 0.5 }));
-    }
-    cv.style.left = r.left + 'px'; cv.style.top = r.top + 'px';
-    ctx.clearRect(0, 0, w, h);
-    [true, false].forEach((far) => {
-      ctx.strokeStyle = far ? 'rgba(2,215,242,0.1)' : 'rgba(2,215,242,0.22)';
-      ctx.beginPath();
-      drops.forEach((d) => {
-        if (d.far !== far) return;
-        ctx.moveTo(d.x, d.y); ctx.lineTo(d.x - d.len * 0.25, d.y - d.len);
-        d.y += d.v; d.x += d.v * 0.25;
-        if (d.y - d.len > h) { d.y = -d.len; d.x = Math.random() * (w + 60); }
-      });
-      ctx.stroke();
-    });
-  };
-  setInterval(() => {
-    const el = (!document.hidden && localStorage.getItem(KEY) !== '0' && !document.querySelector('.cp-standby')) ? document.querySelector('.part.editor') : null;
-    if (cv && el !== host) stop();
-    if (el && !cv) {
-      host = el; w = h = 0;
-      cv = document.createElement('canvas');
-      cv.style.cssText = 'position:fixed;pointer-events:none;z-index:30;';
-      document.body.appendChild(cv); ctx = cv.getContext('2d'); ctx.lineWidth = 1;
-      requestAnimationFrame(loop);
-    }
-  }, 1000);
 })(); } catch (e) { console.error("[cp-fx]", e); }
 
 // Scanner chatter: every 1.5-4 min a short NCPD dispatch shows bottom left; cpScan() shows one now
@@ -446,9 +401,9 @@ try { (() => {
   const place = () => { try { placeRaw(); } catch (e) { dbg = 'ERR ' + e.message; console.error('[cp-fx] place', e); } };
   // cpDebug() in the dev console: where the ticker thinks it goes
   window.cpDebug = () => JSON.stringify({ place: dbg, ticker: el.style.display, rect: el.getBoundingClientRect().toJSON() });
-  setInterval(place, 1000);
+  every(place, 1000);
   try { next(); } catch (e) { console.error('[cp-fx] ticker', e); }
-  setInterval(next, EVERY);
+  every(next, EVERY);
   window.addEventListener('resize', place);
 })(); } catch (e) { console.error("[cp-fx]", e); }
 
@@ -548,7 +503,7 @@ try { (() => {
   let bar = null, label = null, was = false, off = 0, fake = 0;
   const installing = () => fake > Date.now() || Array.from(document.querySelectorAll('.extension-action.installing')).some((e) => e.offsetParent !== null);
   window.cpRip = () => { fake = Date.now() + 4000; };
-  setInterval(() => {
+  every(() => {
     const on = installing();
     if (on && !bar) {
       bar = document.createElement('div'); bar.className = 'cp-rip';
@@ -572,7 +527,7 @@ try { (() => {
     const rnd = (from) => text.split('').map((c, i) => (i < from || c === ' ' ? c : GL[Math.floor(Math.random() * GL.length)])).join('');
     el.textContent = rnd(0);
     setTimeout(() => {
-      const t0 = Date.now(), iv = setInterval(() => {
+      const t0 = Date.now(), iv = every(() => {
         const p = (Date.now() - t0) / dur;
         if (p >= 1 || !el.isConnected) { el.textContent = text; clearInterval(iv); } else el.textContent = rnd(Math.floor(p * text.length));
       }, 40);
@@ -590,7 +545,7 @@ try { (() => {
   };
   window.cpLvl = (n) => show(n || 2);
   let last = null;
-  setInterval(() => {
+  every(() => {
     const el = Array.from(document.querySelectorAll('.part.statusbar .statusbar-item')).find((e) => e.id && e.id.indexOf('nc.lvl') !== -1);
     if (!el) return;
     el.style.width = '0'; el.style.padding = '0'; el.style.margin = '0'; el.style.overflow = 'hidden';
@@ -654,7 +609,44 @@ try { (() => {
     ['Net outage in all six districts', 'Services are down city wide. Techs have no estimate. Cash only at most stalls.'],
     ['{G} and {G2} war spills into {D}', 'Shots fired near {L}. Police urge everyone to shelter in place.'],
     ['Water main bursts under {D}', 'Streets flood around {L}. Repair crews need {n} hours. Boil all tap water.'],
+    ['Cyberpsycho on the loose in {D}', 'Police seal {L}. A heavily modded attacker is said to be a former runner. Stay indoors.'],
+    ['Corp strike team hits {L}', 'Armoured units storm a hideout in {D}. Residents report a blur of speed and gunfire. Avoid the area.'],
+    ['Heist crew escapes tower in {D}', 'Alarms ring after a daring night job. Corp security says it is under control. Nobody believes them.'],
     ['Mystery signal hijacks {D} screens', 'Every billboard in {D} shows static and one phrase. Technicians are tracing the source.']
+  ];
+  const E = [ // [tag, colour, headline, body]: quiet nods to the Edgerunners anime, all original wording
+    ['STREET', 'red', 'Edgerunner crews lose another member in {D}', 'Fixers say {n} runners went missing this month. Most crews stay quiet about it.'],
+    ['STREET', 'red', 'Teen with new Sandevistan breaks track record near {L}', 'Doctors warn the implant can burn out a body. The kid says it was worth it.'],
+    ['HEALTH', 'grn', 'Cyberpsychosis cases up {n} percent in {D}', 'Clinics see more people who stopped talking and started cutting. Max-Tac stays on call.'],
+    ['CORP', 'cyan', 'Arasaka Academy opens scholarship lottery', 'Thousands of street kids apply. Parents say the odds favour the rich.'],
+    ['STREET', 'red', 'Crew pulls midnight cargo job at {L}', 'A clean heist and a lot of questions. Corp security says nothing was missed.'],
+    ['CULTURE', 'mag', 'Moon trip tickets sell out within minutes', 'Dreamers queue at {L}. Only the wealthiest get a seat. Everyone else watches the sky.'],
+    ['CULTURE', 'mag', 'Afterlife night pass sells fast', 'Mercs and fixers pack the floor. Table prices triple after midnight.'],
+    ['CITY', 'stl', 'Night nurse in {D} treats {n} street cases for free', 'Locals call her a saint. The hospital has asked her to slow down.'],
+    ['NET', 'mag', 'Netrunner crew blamed for {D} signal drop', 'A lone runner is said to have cut the grid for {n} minutes. Techs found no trace.'],
+    ['STREET', 'red', 'Gorilla arm brawl closes {L}', 'Two men with oversized chrome fists wrecked a stall. Neither has paid for the damage.'],
+    ['STREET', 'red', 'Mantis blade duel ends in a draw', 'Two runners traded cuts near {L}. Doctors patched both. Neither will talk.'],
+    ['CORP', 'cyan', 'Militech and Arasaka trade barbs over {D} contract', 'Both firms want the same port deal. Lawyers are already in the rain.'],
+    ['CORP', 'cyan', 'Kang Tao unveils lighter smart pistols', 'Reviewers say the aim assist feels like cheating. Buyers say that is the point.'],
+    ['MONEY', 'yel', 'Sandevistan upgrade sale ends tonight', 'Prices drop {n} percent. Clinics warn about back alley copies.'],
+    ['HEALTH', 'grn', 'Ripperdoc raided in {D}', 'Police find {n} unlicensed implants in a back room. The doc vanished.'],
+    ['CITY', 'stl', 'Tall armoured figure spotted near {L}', 'Residents say it never stopped walking. Police call it a prank.'],
+    ['CULTURE', 'mag', 'Sad ballad about a lost love tops the charts', 'It has led {D} request lists for {n} days. Radio hosts are tired of it.'],
+    ['STREET', 'red', 'Runner crew buys a round for the whole bar at {L}', 'Cash from a late job. The bartender did not ask where it came from.'],
+    ['NET', 'mag', 'Old username shows online after {n} years', 'Friends say it is a prank. The account has not posted yet.'],
+    ['HEALTH', 'grn', 'Free implant checks offered in {D}', 'Doctors want to catch overloaded nerves before they fail. The queue passes {L}.'],
+    ['STREET', 'red', 'Crew member returns with a new cyberarm', 'The upgrade was paid with one last job. Old friends mark the date quietly.'],
+    ['CITY', 'stl', 'Rooftop party for a missing friend draws {n}00 people', 'Music, neon and one empty chair. Organisers promise to do it every year.'],
+    ['CORP', 'cyan', 'Academy graduate promoted to security lead', 'Born in {D}, now guarding a tower. Neighbours are proud and worried.'],
+    ['SPORT', 'yel', 'Underground bike race on {L} draws record crowd', 'Street kids on rewired bikes beat the favourites. Betting stalls pay out until dawn.'],
+    ['CRIME', 'red', 'Stolen implant crates found empty at {L}', 'Police believe a crew took only the best units. Insurers refuse to pay.'],
+    ['CITY', 'stl', 'Night market sells fake moon rocks', 'Hawkers claim each stone came from orbit. Buyers say it is still a nice souvenir.'],
+    ['CRIME', 'red', 'Cyberpsycho alert closes {L}', 'Police set a perimeter. Neighbours stay indoors. The suspect is said to be a former runner.'],
+    ['CULTURE', 'mag', 'Street musician plays one song for {n} hours', 'The song is sad. The crowd is bigger every night.'],
+    ['HEALTH', 'grn', 'Brain load warning issued for speed implants', 'A study says {n} in 100 users overheat. Dealers say it is exaggerated.'],
+    ['STREET', 'red', 'Runners dispute payment with fixer at {L}', 'A crew says it was shorted. The fixer says the job was not clean.'],
+    ['NET', 'mag', 'Netwatch warns of stray signals over {D}', 'Techs link them to an old cyberdeck. Residents are told to unplug.'],
+    ['CITY', 'stl', 'Lunar dreamers sign petition for cheaper flights', 'Backers fill {L} with paper moons. The airline has not replied.']
   ];
   const A = ['AD: {S}: STAY COVERED, STAY ALIVE', 'AD: {C}: THE FUTURE RUNS ON US', 'AD: {S}: HERE IN {n} MINUTES OR THE NEXT RIDE IS FREE', 'AD: {C}: BUILT FOR THE CITY THAT NEVER SLEEPS', 'AD: {S} PLANS FROM {n}0 PER MONTH'];
   const hash = (s) => { let h = 2166136261; for (const ch of s) h = Math.imul(h ^ ch.charCodeAt(0), 16777619); return h >>> 0; };
@@ -672,8 +664,8 @@ try { (() => {
   const batch = (salt, n) => { // n distinct stories for this date and salt
     const r = rng(hash(day() + salt)), out = [], seen = new Set();
     for (let k = 0; out.length < n && k < n * 8; k++) {
-      const ti = Math.floor(r() * T.length), t = T[ti], f = fill(t[0] + "|" + t[1], r).split("|"), h = f[0].toUpperCase();
-      if (!seen.has(h)) { seen.add(h); out.push([h, f[1], CAT[ti]]); }
+      const e = r() < 0.12, ti = Math.floor(r() * (e ? E.length : T.length)), t = e ? E[ti].slice(2) : T[ti], f = fill(t[0] + "|" + t[1], r).split("|"), h = f[0].toUpperCase();
+      if (!seen.has(h)) { seen.add(h); out.push([h, f[1], e ? E[ti] : CAT[ti]]); }
     }
     return out;
   };
@@ -685,7 +677,7 @@ try { (() => {
   const lf = (cls, text) => mk('span', 'lf ' + cls, text);
   const fillRow = () => { // news with coloured tags, a made-up market segment every 8 stories, an ad every 5
     sp.textContent = '';
-    const r = rng(hash(day() + 'ad')), news = batch('t', 30), ads = A.map((s) => fill(s, r).replace(/^AD: /, '').toUpperCase());
+    const r = rng(hash(day() + 'ad')), news = batch('t', 20), ads = A.map((s) => fill(s, r).replace(/^AD: /, '').toUpperCase());
     const add = (tag, tagCls, ...rest) => { const it = mk('span', 'it'); it.append(lf('tg ' + tagCls, tag), ...rest); sp.append(it, mk('span', 'sp', '//')); };
     if (!news.length) news.push(['NIGHT CITY NEWS 24 STANDING BY', '', ['CITY', 'stl']]);
     news.forEach((x, k) => {
@@ -712,7 +704,7 @@ try { (() => {
   row.append(mk('i', '', 'NCN'), sg, lab, run);
   let shrink = false, rowDay = '';
   const resize = () => window.dispatchEvent(new Event('resize'));
-  const setText = () => { rowDay = day(); fillRow(); sp.style.animationDuration = Math.round(sp.textContent.length * 0.11) + 's'; };
+  const setText = () => { rowDay = day(); fillRow(); const dur = Math.round(sp.textContent.length * 0.11); sp.style.animationDuration = dur + 's'; sp.style.animationTimingFunction = 'steps(' + Math.max(1, dur * 30) + ', end)'; }; // 30 steps a second: half the frames, same speed
   const rowOn = () => {
     if (!desc || !desc.get || !desc.configurable) return;
     Object.defineProperty(window, 'innerHeight', { configurable: true, get: () => realH() - (shrink ? BH : 0) });
@@ -728,10 +720,10 @@ try { (() => {
   const rowOff = () => { shrink = false; row.remove(); resize(); };
   setText();
   let tries = 0;
-  const wait = setInterval(() => {
+  const wait = every(() => {
     if (document.querySelector('.part.statusbar') && document.body) { clearInterval(wait); rowOn(); } else if (++tries > 60) clearInterval(wait);
   }, 500);
-  setInterval(() => { if (rowDay !== day()) setText(); }, 30000);
+  every(() => { if (rowDay !== day()) setText(); }, 30000);
   // random glitch: about 8% of the characters turn to noise for a moment while the row jumps and splits
   const GLY = '#%&@$01/|<>=+*';
   const glitchRow = () => {
@@ -744,6 +736,93 @@ try { (() => {
   const glLater = () => setTimeout(() => { glitchRow(); if (Math.random() < 0.3) setTimeout(glitchRow, 700); glLater(); }, 15000 + Math.random() * 60000);
   glLater();
   window.cpRow = (on) => { if (on === false) rowOff(); else if (!shrink) rowOn(); };
+
+  // Radio chip: the real in-game stations and tracks (titles only, as listed in public track guides after update 2.0) at the right end of the row. The track follows the clock (3.5 minute slots, order shuffled by date). Click tunes to the next station through a burst of static, right click mutes, hover shows the queue. Each station has its own colour, the bars run hard while Claude works, an ad break comes every few tracks, and a thin line shows how far the track is. cpRadio() skips a track
+  const R = [
+    ["88.9", "PACIFIC DREAMS", [["Quantum Lovers","Isometric Air"], ["Quantum Lovers","Practical Heart"], ["Quantum Lovers","Real Window"], ["Pacific Avenue","Antagonistic"], ["Jänsens","Simple Pleasures"], ["Flatlander Woman","Lithium"], ["Flatlander Woman","Slag"], ["Muchomorr","Chooze"], ["Lick Switch","Midnight Eye"], ["Lick Switch","Blurred"], ["Lick Switch","The Other Room"], ["Sonoris Causa","La Stessa Causa"], ["Left Unsaid","Retrogenesis"], ["Talk To Us","Miami Suicide"], ["Talk To Us","Slippery Stabs"], ["Wormview","Ashes and Diamonds"], ["Mona Mitchell","Ice Maddox"]]],
+    ["89.3", "RADIO VEXELSTROM", [["The Cartesian Duelists","Resist and Disorder"], ["The Cartesian Duelists","Kill the Messenger"], ["Slavoj McAllister","Makes Me Feel Better"], ["Keine","Dead Pilot"], ["Keine","Come Close"], ["Upgrade","Black Terminal"], ["Alexei Brayko","Reaktion"], ["Ego Affliction","With Her"], ["Den of Degenerates","Never Stop Me"], ["The Red Glare","Violence"], ["The Red Glare","Pain"], ["Homeschool Dropouts","Night City Aliens"], ["Tainted Overlord","Selva Pulsátil"], ["Tainted Overlord","A Caça"]]],
+    ["89.7", "GROWL FM", [["Coeur Noir","Let The Stars Die"], ["Red Dead Roadkill","Flatline"], ["Spirit Machines","Candy Shell"], ["NoWorld","Do or Die"], ["Entolim","LIT"], ["Skin on Flesh","El Tiempo"], ["Frost, Justtjokay, Dubbygotbars, and Knyvez","Killshot"], ["HARU NEMURI","Let It Go As If You Wander"], ["Kiba","Slipstream"], ["Aleyna Moon and Shrinjay Ghosh","Fumes"], ["D.O.H. Dollahz Ova Hoez","Look Through My Kiroshi's (The Solo Life)"], ["St. Aurora","Going to Heaven"], ["ESAI and Pure 100%","Nebula"], ["Thai McGrath ft. JustCosplaySings","Afterlife"]]],
+    ["91.9", "ROYAL BLUE RADIO", [["Miles Davis","Black Satin"], ["Miles Davis","What If"], ["Miles Davis","Agharta Prelude Dub"], ["Miles Davis","Bitches Brew"], ["Miles Davis","Générique (from Ascenseur pour L'Échafaud)"], ["John Coltrane","Impressions"], ["Charles Mingus","Solo Dancer"], ["Dexter Gordon","Laura"], ["Chet Baker","You Don't Know What Love Is"], ["Thelonious Monk","Round Midnight"], ["Trio of Doom","Dark Prince"]]],
+    ["92.9", "NIGHT FM", [["Perilous Futur","Dirty Roses"], ["The Unresolved","Worlds"], ["The Unresolved","X"], ["Doctor Berserk","Maniak"], ["Generating Dependencies","Me Machine"], ["Lick Switch","Like a Miracle"], ["Kings of Collapse","Run"], ["Reviscerator","Glitched Revelation"], ["Reviscerator","Yellow Box"], ["The Bait","Kill Kill"], ["Ashes Potts","Flying Heads"], ["Yards of the Moon","Volcano The Sailor"], ["Cyber Coorayber","Brain-Damaged"]]],
+    ["95.2", "SAMIZDAT RADIO", [["Bara Nova","Pilling in My Head"], ["Bara Nova","Delirium 2"], ["Bara Nova","Harm Sweaty Pit"], ["Bara Nova","My Lullaby for You"], ["Bara Nova","Surprise Me, I'm Surprised Today"]]],
+    ["96.1", "RITUAL FM", [["V3RM1N","Finis"], ["Dread Soul","The Accursed"], ["Bacillus","Adaptive Manipulator"], ["Bacillus","March 30"], ["Forlorn Scourge","Acid Breather"], ["Nuclear Aura","Witches of the Harz Mountains"], ["Weles","The Loop"], ["Hysteria","Scrum"], ["Inferno Crops","Fuelled By Poison"], ["Inferno Crops","Kevin"], ["Hexxxer","Future Drugs"], ["Wydech","Żurawie"], ["Fist of Satan","Abandoned Land"], ["Fist of Satan","Black Concrete"], ["Shattered Void","I Won't Let You Go"]]],
+    ["98.7", "BODY HEAT RADIO", [["Clockwork Venus","BM"], ["Neon Haze","Circus Minimus"], ["Window Weather","Major Crimes"], ["Artemis Delta","Night City"], ["Hallie Coggins","I Really Want to Stay at Your House"], ["Point Break Candy","Hole In The Sun"], ["American Medical Association","Blind"], ["Trash Generation","History"], ["Lizzy Wizzy","4ÆM"], ["Lizzy Wizzy","Delicate Weapon"], ["Us Cracks","Ponpon Sh*t"], ["Us Cracks","User Friendly cover"], ["Us Cracks ft. Kerry Eurodyne","Off the Leash"], ["IBDY","Crustpunk"], ["IBDY","Here's a Thought"]]],
+    ["99.9", "IMPULSE", [["Mr. Kipper","Walk Of Shame"], ["Private Press","Dreamy"], ["Private Press","DEEEEEEP"], ["Private Press","Black Labyrinth"], ["Private Press","Feed Your Soul"], ["Private Press","Liquid Disco"], ["Private Press","Sleepy Dust"], ["Private Press","Sparkling Frequency"], ["Private Press","Undeniably Changes"], ["Private Press","Void"], ["Private Press","Woozee"], ["Private Press","GREEEEEENHOUSE"], ["Private Press","BESTPL"], ["Private Press","ENERGEEHOUSE"]]],
+    ["101.9", "THE DIRGE", [["Kill Trigger ft. Paul Senai and Krakow","The God Machines"], ["NC3","Blouses Blue"], ["Young Kenny","Problem Kids"], ["Droox","Bigger Man"], ["DNE ft. G'Natt","Go Blaze"], ["Ichibanchi","Dishonor"], ["Yamete","Frost"], ["UMVN ft. IMP RA","High School Bully"], ["Dapxflem","NBOM"], ["Code 137","Suicide"], ["Haps","Day of Dead"], ["Knixit","Bruzez"], ["Sugarcoob ft. Anak Konda","Clip Boss"], ["Triple-B ft. Gun-Fu","Pluck U"], ["Pazoozu","Hello Good Morning"], ["Bez Tatami ft. Gully Foyle","Run The Block"], ["Kyubik","GR4VES"], ["Laputan Machine","Warning Shots"], ["Gorgon Madonna","Metamorphosis"], ["Yankee and the Brave","No Save Point"], ["Telo$","Flacko Locko"]]],
+    ["103.5", "RADIO PEBKAC", [["Error","Bios"], ["Sao Mai","Drained"], ["Spoon Eater","Subvert"], ["Nablus","Follow the White Crow"], ["IOshrine","Fake Spook"], ["[flesh]reactor","Move Dat"], ["Bullet in the Head","CANNIBALISMUS"], ["culteX","La Canopée"], ["Skin<>Drifter","Undertow Velocity"], ["Yards of the Moon","IIOI Break"], ["Retinal Scam","Across the Floor"], ["Retinal Scam","Gridflow"], ["Tar Hawk","Vascular"], ["Tinnitus","On My Way to Hell"], ["Clockwork OS","Stackoverflow"], ["Dukes of Azure","Darkretro"]]],
+    ["106.9", "30 PRINCIPALES", [["Kartel Sonoro","Bamo"], ["Kartel Sonoro","Dagga"], ["7 Facas","Dinero"], ["7 Facas","Serpant"], ["Don Mara","Tatted on my Face"], ["Big Machete","Barrio"], ["Chickychickas","Hood"], ["Chickychickas","Only Son"], ["Papito Gringo","Muévelo"], ["Papito Gringo","Cumbia"], ["FKXU","Muerto Trash"], ["DJ Choloz","Westcoast Til I Die"]]],
+    ["107.3", "MORRO ROCK RADIO", [["Brutus Backlash","Suffer Me"], ["XerzeX","Heave Ho"], ["Beached Tarantula","I Will Follow"], ["IBDY","Who's Ready for Tomorrow"], ["IBDY","Likewise"], ["Rubicones","Friday Night Fire Fight"], ["Rubicones","Trauma"], ["Blood and Ice","Summer of 2069"], ["Krushchev's Ghosts","Testmaster"], ["Cutthroat","Sustain/Decay"], ["Artificial Kids","To the Fullest"], ["Fingers and The Outlaws","So It Goes"], ["Samurai","Never Fade Away"], ["Samurai","Black Dog"], ["Samurai","Chippin' In"], ["Samurai","The Ballad of Buck Ravers"]]],
+    ["107.5", "DARK STAR", [["Mr. Kipper","Choke Hold"], ["BADPANNINI","Headrush"], ["No Strings Attached","Orbital Insertion"], ["BWANA MUNGU","Cyko Arctic"], ["OLO Y","Pierwszy raz naprawdę"], ["DJ papergekko","NUCLEAR DREAMLAND"], ["Mr. Kipper","Rolla Coaster"], ["ECKO FREQUENCY","IKARI"], ["Her Mashewsky","fabrica KOSMOS"], ["Walt Air","dRk"], ["Mightonauts","Minion Sex"], ["DJ papergekko","Bigger Crimes"], ["Łotr","Memories of Mzuzu"]]]
+  ];
+  const CL = { '88.9': '#2DE6C5', '89.3': '#7C7CFF', '89.7': '#FF003C', '91.9': '#4F8CFF', '92.9': '#FF2BD6', '95.2': '#FFB000', '96.1': '#B8B8C8', '98.7': '#FF7AC8', '99.9': '#3CFF9A', '101.9': '#FCEE0A', '103.5': '#8FA3B0', '106.9': '#FF5A36', '107.3': '#FF9F1C', '107.5': '#B14DFF' };
+  const col = (f) => CL[f] || '#02D7F2';
+  const AD = ['{S}: STAY COVERED', '{C}: POWER YOU CAN TRUST', '{S}: HERE IN {n} MIN OR FREE', '{C}: THE FUTURE RUNS ON US', '{S}: PLANS FROM {n}0 A MONTH', '{C}: BUILT FOR THE NIGHT'];
+  const SLOT = 210000;
+  let st = Math.floor(rng(hash(day() + 'radio'))() * R.length), off = 0, shown = '', rpop = null, tuning = false, muted = false, adUntil = 0, plays = 0;
+  const rd = mk('span', 'rd'), eq = mk('span', 'rd-eq'), fm = mk('span', 'rd-fm'), ttl = mk('span', 'rd-t'), inn = mk('span', ''), pg = mk('span', 'rd-pg'), gh = mk('span', 'rd-t rd-gh'); let tw = 250, fw = 0; // gh: hidden twin used to measure a title
+  for (let k = 0; k < 5; k++) eq.appendChild(mk('span', ''));
+  ttl.appendChild(inn); rd.append(eq, fm, ttl, pg, gh); row.appendChild(rd);
+  const paint = () => { rd.style.setProperty('--rc', col(R[st][0])); };
+  const queue = () => { // today's shuffled order for this station, and where the clock is in it
+    const s = R[st], r = rng(hash(day() + s[0])), o = s[2].map((t) => [r(), t]).sort((x, y) => x[0] - y[0]).map((x) => x[1]);
+    return [o, Math.floor((Date.now() + off) / SLOT) % o.length];
+  };
+  const label = (t) => t[1] + ' // ' + t[0];
+  const size = (text) => { gh.textContent = text; const w = Math.ceil(gh.getBoundingClientRect().width); if (!w) return; fw = w; tw = Math.min(w + 2, 250); ttl.style.width = tw + 'px'; }; // box follows the title up to 250px, eased by css
+  const fit = () => { // a long title slides back and forth inside the fixed box
+    inn.classList.remove('mq'); const ov = fw - tw;
+    if (ov > 4) { inn.style.setProperty('--ov', -ov + 'px'); inn.style.setProperty('--d', Math.round(ov / 16 + 4) + 's'); inn.classList.add('mq'); }
+  };
+  const scramble = (text) => { // random glyphs that resolve left to right
+    size(text); inn.classList.remove('mq'); const t0 = Date.now(), iv = every(() => {
+      const p = (Date.now() - t0) / 420;
+      if (p >= 1 || !rd.isConnected) { inn.textContent = text; rd.classList.remove('g'); clearInterval(iv); fit(); return; }
+      inn.textContent = text.split('').map((c, i) => (i < p * text.length || c === ' ' ? c : GLY[Math.floor(Math.random() * GLY.length)])).join('');
+    }, 40);
+  };
+  const play = (anim) => { const [o, i] = queue(); fm.textContent = R[st][0]; paint(); if (anim) { rd.classList.add('g'); scramble(label(o[i])); } else { size(label(o[i])); inn.textContent = label(o[i]); fit(); } };
+  const ad = () => {
+    const text = fill(AD[Math.floor(Math.random() * AD.length)], rng(hash(String(Date.now())))).toUpperCase();
+    adUntil = Date.now() + 8000; rd.classList.add('ad'); fm.textContent = 'AD'; scramble('AD BREAK // ' + text);
+    setTimeout(() => { adUntil = 0; rd.classList.remove('ad'); shown = ''; tune(); }, 8000);
+  };
+  const tune = (natural) => {
+    if (tuning || Date.now() < adUntil) return;
+    const [o, i] = queue(), key = R[st][0] + '/' + i;
+    if (key === shown) return;
+    const first = shown === ''; shown = key;
+    if (first) play(false); else if (natural && ++plays % 4 === 0) ad(); else play(true);
+  };
+  const tuneTo = (n) => { // sweep the dial: random frequencies and static, then lock on
+    if (tuning) return; tuning = true; closePop(); rd.classList.add('tn'); rd.classList.remove('ad'); adUntil = 0; let k = 0;
+    const iv = every(() => {
+      if (++k > 10 || !rd.isConnected) {
+        clearInterval(iv); st = n; off = 0; tuning = false; rd.classList.remove('tn'); shown = ''; paint();
+        const [o, i] = queue(); shown = R[st][0] + '/' + i; play(true); return;
+      }
+      fm.textContent = (88 + Math.random() * 20).toFixed(1); rd.style.setProperty('--rc', col(R[Math.floor(Math.random() * R.length)][0]));
+      inn.classList.remove('mq'); inn.textContent = Array.from({ length: 24 }, () => '#%&@01/|<>=+*'.charAt(Math.floor(Math.random() * 13))).join('');
+    }, 60);
+  };
+  function closePop() { if (rpop) { rpop.remove(); rpop = null; } }
+  const openPop = () => {
+    closePop(); if (!document.body || tuning) return;
+    const [o, i] = queue(); rpop = mk('div', 'cp-rpop'); rpop.style.setProperty('--rc', col(R[st][0])); rpop.appendChild(mk('h4', '', R[st][0] + ' ' + R[st][1] + ' // TODAY'));
+    for (let k = 0; k < Math.min(4, o.length); k++) { const t = o[(i + k) % o.length], li = mk('div', k ? '' : 'on'); li.append(mk('span', '', label(t)), mk('span', 't', k ? '+' + k : 'NOW')); rpop.appendChild(li); }
+    const ft = mk('div', 'ft'); ft.append(mk('span', '', 'CLICK: NEXT   RIGHT CLICK: MUTE'), mk('span', '', R.length + ' STATIONS')); rpop.appendChild(ft);
+    document.body.appendChild(rpop);
+  };
+  rd.addEventListener('mouseenter', openPop); rd.addEventListener('mouseleave', closePop);
+  rd.addEventListener('click', () => tuneTo((st + 1) % R.length));
+  rd.addEventListener('contextmenu', (e) => { e.preventDefault(); muted = !muted; rd.classList.toggle('mt', muted); });
+  paint();
+  every(() => {
+    if (!rd.isConnected) { shown = ''; return; } // measuring needs the row on the page; replay the title once it is back
+    tune(true);
+    pg.style.transform = 'scaleX(' + (((Date.now() + off) % SLOT) / SLOT).toFixed(3) + ')';
+    rd.classList.toggle('busy', !!document.querySelector('.monaco-workbench.cp-busy'));
+  }, 1000);
+  window.cpRadio = () => { off += SLOT - ((Date.now() + off) % SLOT) + 50; tune(); };
 
   // BREAKING popup: a box with a glitch in and out at random times (first after 3-8 min, then every 20-45 min)
   const box = mk('div', 'cp-news'), scr = mk('div', 'scr'), nn = mk('div', 'nn'), hd = mk('div', 'hd'), bd = mk('div', 'bd');

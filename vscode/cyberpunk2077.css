@@ -50,7 +50,7 @@
 
 /* Heartbeat: the terminal box breathes a faint neon pulse (lub-dub) with a rare cyan glitch flick; only while Claude works (cp-busy set by cyberpunk-fx.js) */
 .monaco-workbench.cp-busy .terminal-wrapper {
-  animation: cp-heartbeat 2.4s ease-in-out infinite;
+  animation: cp-heartbeat 2.4s steps(3, end) infinite;
 }
 @keyframes cp-heartbeat {
   0%   { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--cp-red) 18%, transparent), inset 0 0 8px color-mix(in srgb, var(--cp-red) 8%, transparent); }
@@ -531,8 +531,8 @@
 /* REC dot: the extension shows a filled dot only while Claude works; this makes it breathe (smooth fade and glow) instead of swapping glyphs */
 .statusbar-item[id*="nc.rec"] .codicon-circle-filled { animation: cp-rec-pulse 1.6s ease-in-out infinite; }
 @keyframes cp-rec-pulse {
-  0%, 100% { opacity: 1; text-shadow: 0 0 6px var(--cp-red); }
-  50% { opacity: 0.25; text-shadow: none; }
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
 }
 
 /* Flatline: ECG line above the status bar when errors go up (cyberpunk-fx.js adds .cp-flat for 2.7 s) */
@@ -717,3 +717,82 @@
 .cp-nrow.al .sg span { animation-duration: 0.5s; }
 @keyframes cp-sig { 0%, 100% { opacity: 0.2; } 35%, 65% { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .cp-nrow .sg span { animation: none; } }
+
+/* Radio chip: cyan, at the right end of the news row; equaliser bars, frequency tag, track; hover shows the queue */
+.cp-nrow .rd { flex: none; display: flex; align-items: center; gap: 8px; padding: 0 12px; margin-left: 4px; border-left: 1px solid #1d2a30; background: linear-gradient(#02d7f20d, transparent); pointer-events: auto; cursor: pointer; }
+.cp-nrow .rd-eq { display: flex; align-items: flex-end; gap: 1.5px; height: 11px; }
+.cp-nrow .rd-eq span { width: 2px; height: 3px; background: var(--cp-cyan); box-shadow: 0 0 4px var(--cp-cyan); animation: cp-eq 0.9s ease-in-out infinite alternate; }
+.cp-nrow .rd-eq span:nth-child(2) { animation-duration: 0.6s; } .cp-nrow .rd-eq span:nth-child(3) { animation-duration: 1.1s; }
+.cp-nrow .rd-eq span:nth-child(4) { animation-duration: 0.7s; } .cp-nrow .rd-eq span:nth-child(5) { animation-duration: 0.8s; }
+@keyframes cp-eq { 0% { height: 2px; } 100% { height: 11px; } }
+.cp-nrow .rd-fm { font: 10px/14px "Share Tech Mono", Consolas, monospace; color: #5fe8f7; border: 1px solid #02d7f255; padding: 0 4px; clip-path: polygon(0 0, calc(100% - 4px) 0, 100% 4px, 100% 100%, 0 100%); }
+.cp-nrow .rd-t { max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 12px/25px "Share Tech Mono", Consolas, monospace; color: #bff6fc; text-shadow: 0 0 6px #02d7f288; }
+.cp-nrow .rd.g .rd-t { animation: cp-rd-g 0.42s steps(1, end); }
+.cp-nrow .rd.g .rd-fm { color: var(--cp-red); border-color: var(--cp-red); }
+.cp-nrow .rd.g .rd-eq span { animation-play-state: paused; height: 6px; }
+@keyframes cp-rd-g { 0% { transform: translateX(2px); text-shadow: 2px 0 var(--cp-red), -2px 0 var(--cp-cyan); clip-path: inset(0 0 45% 0); } 25% { transform: translateX(-3px); text-shadow: -2px 0 var(--cp-red), 2px 0 var(--cp-cyan); clip-path: inset(40% 0 0 0); } 50% { transform: translateX(1px); clip-path: none; } 75%, 100% { transform: none; } }
+.cp-rpop { position: fixed; right: 8px; bottom: 32px; z-index: 41; width: 330px; box-sizing: border-box; padding: 10px 12px; background: #07070be8; border: 1px solid #02d7f266; box-shadow: 0 0 18px #02d7f222; font: 12px "Share Tech Mono", Consolas, monospace; color: #9a9aa8; pointer-events: none; clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%); }
+.cp-rpop h4 { margin: 0 0 6px; font-size: 11px; font-weight: 400; color: var(--cp-cyan); letter-spacing: 0.1em; }
+.cp-rpop div { display: flex; justify-content: space-between; gap: 10px; padding: 2px 0; }
+.cp-rpop div.on { color: #bff6fc; text-shadow: 0 0 6px #02d7f288; }
+.cp-rpop div.on span:first-child::before { content: "> "; color: var(--cp-cyan); }
+.cp-rpop .t, .cp-rpop .ft { color: #555; font-size: 10px; }
+.cp-rpop .ft { margin-top: 6px; }
+@media (prefers-reduced-motion: reduce) { .cp-nrow .rd-eq span { animation: none; } }
+.cp-rpop div span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cp-nrow .rd-t { max-width: 260px; }
+.cp-nrow .rd-t { width: 250px; max-width: none; }
+.cp-rpop div span:first-child { white-space: normal; overflow: visible; }
+
+/* Radio chip v2: per-station colour (--rc), idle and busy bars, tuning static, ad break, mute, progress line, sliding long titles */
+.cp-nrow .rd { position: relative; border-left-color: color-mix(in srgb, var(--rc, #02D7F2) 30%, #0a0a0f); background: linear-gradient(color-mix(in srgb, var(--rc, #02D7F2) 8%, transparent), transparent); }
+.cp-nrow .rd-eq span { background: var(--rc, #02D7F2); box-shadow: 0 0 4px var(--rc, #02D7F2); animation-name: cp-eq-lo; }
+.cp-nrow .rd.busy .rd-eq span { animation-name: cp-eq; animation-duration: 0.45s; }
+.cp-nrow .rd.tn .rd-eq span { animation-name: cp-eq; animation-duration: 0.15s; }
+.cp-nrow .rd.mt .rd-eq span { animation: none; height: 2px; background: #555; box-shadow: none; }
+@keyframes cp-eq-lo { 0% { height: 2px; } 100% { height: 5px; } }
+.cp-nrow .rd-fm { color: var(--rc, #5fe8f7); border-color: color-mix(in srgb, var(--rc, #02D7F2) 55%, transparent); }
+.cp-nrow .rd-t { color: color-mix(in srgb, var(--rc, #02D7F2) 30%, #fff); text-shadow: 0 0 6px color-mix(in srgb, var(--rc, #02D7F2) 55%, transparent); }
+.cp-nrow .rd-t > span { display: inline-block; }
+.cp-nrow .rd-t > span.mq { animation: cp-mq var(--d, 8s) linear infinite alternate; }
+@keyframes cp-mq { 0%, 20% { transform: translateX(0); } 80%, 100% { transform: translateX(var(--ov, 0)); } }
+.cp-nrow .rd.mt .rd-t { opacity: 0.4; }
+.cp-nrow .rd.tn .rd-t { color: #fff; }
+.cp-nrow .rd.ad .rd-fm { background: var(--cp-yellow); color: #000; border-color: var(--cp-yellow); }
+.cp-nrow .rd.ad .rd-t { color: var(--cp-yellow); text-shadow: 0 0 6px color-mix(in srgb, var(--cp-yellow) 60%, transparent); }
+.cp-nrow .rd-pg { position: absolute; left: 0; bottom: 0; height: 1px; width: 0; background: var(--rc, #02D7F2); box-shadow: 0 0 4px var(--rc, #02D7F2); transition: width 1s linear; }
+.cp-rpop { border-color: color-mix(in srgb, var(--rc, #02D7F2) 45%, transparent); box-shadow: 0 0 18px color-mix(in srgb, var(--rc, #02D7F2) 14%, transparent); }
+.cp-rpop h4, .cp-rpop div.on span:first-child::before { color: var(--rc, #02D7F2); }
+.cp-rpop div.on { color: color-mix(in srgb, var(--rc, #02D7F2) 30%, #fff); text-shadow: 0 0 6px color-mix(in srgb, var(--rc, #02D7F2) 50%, transparent); }
+@media (prefers-reduced-motion: reduce) { .cp-nrow .rd-t > span.mq, .cp-nrow .rd-eq span { animation: none; } }
+.cp-nrow .rd-t { transition: width 0.35s ease; }
+.cp-nrow .rd-gh { position: absolute; left: 0; top: 0; width: auto; max-width: none; visibility: hidden; pointer-events: none; transition: none; }
+
+/* Performance pass: animate only opacity and transform (they skip layout and paint) */
+.cp-nrow .rd-eq span { height: 11px; transform-origin: bottom; transform: scaleY(0.18); will-change: transform; animation-name: cp-eq-t-lo; }
+.cp-nrow .rd.busy .rd-eq span, .cp-nrow .rd.tn .rd-eq span { animation-name: cp-eq-t; }
+.cp-nrow .rd.g .rd-eq span { height: 11px; transform: scaleY(0.55); }
+.cp-nrow .rd.mt .rd-eq span { height: 11px; transform: scaleY(0.18); }
+@keyframes cp-eq-t { 0% { transform: scaleY(0.18); } 100% { transform: scaleY(1); } }
+@keyframes cp-eq-t-lo { 0% { transform: scaleY(0.18); } 100% { transform: scaleY(0.45); } }
+.cp-nrow .rd-pg { width: 100%; transform-origin: left; transform: scaleX(0); transition: transform 1s linear; }
+.cp-nrow .run { will-change: transform; }
+/* Humanity edge levels 1 and 2: the shadow is painted once on a pseudo element and only its opacity breathes */
+.monaco-workbench.cp-lv1 > .cp-edge, .monaco-workbench.cp-lv2 > .cp-edge { animation: none !important; }
+.monaco-workbench > .cp-edge::before { content: ""; position: absolute; inset: 0; }
+.monaco-workbench.cp-lv1 > .cp-edge::before { box-shadow: inset 0 0 56px 2px color-mix(in srgb, var(--cp-red) 16%, transparent); animation: cp-edge-o1 4s ease-in-out infinite; }
+.monaco-workbench.cp-lv2 > .cp-edge::before { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--cp-red) 45%, transparent), inset 0 0 72px 4px color-mix(in srgb, var(--cp-red) 26%, transparent); animation: cp-edge-o2 2.4s ease-in-out infinite; }
+@keyframes cp-edge-o1 { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+@keyframes cp-edge-o2 { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
+.statusbar-item[id*="nc.rec"] .codicon-circle-filled { text-shadow: 0 0 6px var(--cp-red); }
+
+/* Performance pass 2: fewer frames. Stepped animations only repaint when a step changes; idle bars and the long-title slide are static until needed */
+.cp-nrow .run, .cp-nrow .rd-eq span { will-change: auto; }
+.cp-nrow .rd-eq span { animation-timing-function: steps(5, end); }
+.cp-nrow .rd:not(.busy):not(.tn):not(.mt) .rd-eq span { animation: none; transform: scaleY(0.3); }
+.cp-nrow .rd-t > span { display: inline; }
+.cp-nrow .rd-t > span.mq { animation: none; }
+.cp-nrow .rd:hover .rd-t > span.mq { display: inline-block; animation: cp-mq var(--d, 8s) linear infinite alternate; }
+.cp-nrow .rd-pg { transition: none; }
+.cp-nrow .sg span { animation-timing-function: steps(4, end); }
+.statusbar-item[id*="nc.rec"] .codicon-circle-filled { animation-timing-function: steps(5, end); }
