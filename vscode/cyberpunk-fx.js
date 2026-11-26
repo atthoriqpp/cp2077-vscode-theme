@@ -372,6 +372,51 @@ try { (() => {
   setTimeout(() => { if (!document.hidden) show(); loop(); }, (0.5 + Math.random() * 0.5) * 60000);
 })(); } catch (e) { console.error("[cp-fx]", e); }
 
+// Fixer call: a rare incoming call card, bottom left, stacked above the NCPD dispatch when one is showing. First call 1-2 min after load, then every 4-8 min; skipped while Claude works or after 10 min without input. Accept logs the gig and adds the pay to a running total; cpFixer() rings now
+try { (() => {
+  const mk = (tag, cls, text) => { const x = document.createElement(tag); x.className = cls; if (text) x.textContent = text; return x; };
+  const pick = (a) => a[Math.floor(Math.random() * a.length)];
+  const WHO = ['NO CALLER ID', 'BLOCKED NUMBER', 'UNKNOWN FIXER', 'BURNER LINE', 'ENCRYPTED LINE'];
+  const GIG = [
+    'Escort a data courier across {p}. Quiet hands only.', 'Pick up a sealed case in {p}. Do not open it.', 'A client in {p} wants a rival\'s drone fleet grounded.',
+    'Lift a prototype from a loading dock in {p}.', 'Lean on a debtor in {p}. Talk first.', 'Watch a safehouse in {p} and report who walks in.',
+    'Recover a stolen cyberdeck from a pawn shop in {p}.', 'Plant a listening device in a lobby in {p}.', 'Walk a nervous informant out of {p} before dawn.',
+    'Wipe a camera feed in {p} for ten minutes.', 'Deliver a message to a runner crew in {p}. In person.', 'Find out who is selling counterfeit chips in {p}.',
+  ];
+  const PLACE = ['Watson', 'Westbrook', 'Heywood', 'Pacifica', 'Santo Domingo', 'City Center', 'Kabuki', 'Japantown', 'Little China', 'the Badlands'];
+  const SECS = 20;
+  let card = null, iv = null, total = 0, lastInput = Date.now();
+  for (const ev of ['keydown', 'pointerdown', 'mousemove']) window.addEventListener(ev, () => { lastInput = Date.now(); }, { passive: true });
+  const stack = () => { const s = document.querySelector('.cp-scan'); if (card) card.style.bottom = (32 + (s ? s.offsetHeight + 8 : 0)) + 'px'; }; // sits above the dispatch
+  const close = (msg) => {
+    if (!card) return; const c = card; card = null; clearInterval(iv);
+    if (msg) { c.classList.remove('ring'); c.querySelector('.bd').textContent = msg; c.querySelector('.bt').remove(); c.querySelector('.cd').style.visibility = 'hidden'; card = c; stack(); }
+    setTimeout(() => c.classList.add('out'), msg ? 2600 : 0);
+    setTimeout(() => { c.remove(); if (card === c) card = null; }, msg ? 3500 : 900);
+  };
+  const ring = () => {
+    if (card) return; const pay = Math.round((1500 + Math.random() * 7500) / 100) * 100, left = { n: SECS };
+    const c = mk('div', 'cp-call ring'), h = mk('div', 'h', 'INCOMING CALL'), cd = mk('span', 'cd', '00:' + SECS), who = mk('div', 'w', 'FIXER // ' + pick(WHO));
+    h.appendChild(cd);
+    const bd = mk('div', 'bd', pick(GIG).replace('{p}', pick(PLACE)) + ' Pay: ' + pay.toLocaleString('en-US') + ' eb'), bt = mk('div', 'bt');
+    const yes = mk('span', 'y', 'ACCEPT'), no = mk('span', 'n', 'DECLINE'), bar = mk('span', 'bar');
+    yes.addEventListener('click', () => { total += pay; close('GIG LOGGED // +' + pay.toLocaleString('en-US') + ' eb // TOTAL ' + total.toLocaleString('en-US') + ' eb'); });
+    no.addEventListener('click', () => close());
+    bt.append(yes, no); c.append(h, who, bd, bt, bar); document.body.appendChild(c); card = c; stack();
+    iv = every(() => {
+      stack(); left.n--; cd.textContent = '00:' + String(Math.max(left.n, 0)).padStart(2, '0');
+      bar.style.transform = 'scaleX(' + (Math.max(left.n, 0) / SECS).toFixed(3) + ')';
+      if (left.n <= 0) close();
+    }, 1000);
+  };
+  window.cpFixer = ring;
+  const loop = (min, span) => setTimeout(() => {
+    if (!document.hidden && Date.now() - lastInput < 600000 && !document.querySelector('.monaco-workbench.cp-busy')) ring();
+    loop(4, 4);
+  }, (min + Math.random() * span) * 60000);
+  loop(1, 1);
+})(); } catch (e) { console.error("[cp-fx]", e); }
+
 // Status bar ticker: a new character line every 30 s, set in the widest empty gap of the status bar (hidden when the gap is under 260 px); cpTick() swaps now
 try { (() => {
   const EVERY = 30000, MIN = 260;
