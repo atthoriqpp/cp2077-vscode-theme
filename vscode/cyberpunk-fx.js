@@ -695,7 +695,8 @@ try { (() => {
         const pool = SYM.slice(), parts = [];
         for (let n = 0; n < 4; n++) {
           const s = pool.splice(Math.floor(r() * pool.length), 1)[0], v = r() * 9 - 4.5;
-          parts.push(lf('bd2', s), lf(v >= 0 ? 'up' : 'dn', (v >= 0 ? '\u25B2' : '\u25BC') + Math.abs(v).toFixed(1) + '%'));
+          const up = v >= 0, g = mk('span', 'mk'); // triangle drawn with borders so it centres exactly
+          g.append(lf('bd2', s), mk('span', 'ar ' + (up ? 'up' : 'dn')), lf(up ? 'up' : 'dn', Math.abs(v).toFixed(1) + '%')); parts.push(g);
         }
         add('MARKET', 'grn', ...parts);
       }
@@ -704,10 +705,11 @@ try { (() => {
   };
 
   // running text row: the layout is told the window is 22px shorter, so the row sits free under the status bar; if the layout ignores that, the row stays off
-  const BH = 22, desc = Object.getOwnPropertyDescriptor(window, 'innerHeight');
+  const BH = 26, desc = Object.getOwnPropertyDescriptor(window, 'innerHeight');
   const realH = () => desc.get.call(window);
   const row = mk('div', 'cp-nrow'), run = mk('div', ''), sp = mk('span', 'run'), lab = mk('b', '', 'LIVE');
-  run.appendChild(sp); row.append(mk('i', '', 'NCN'), lab, run);
+  run.appendChild(sp); const sg = mk('span', 'sg'); sg.append(mk('span', ''), mk('span', ''), mk('span', '')); // broadcast signal bars
+  row.append(mk('i', '', 'NCN'), sg, lab, run);
   let shrink = false, rowDay = '';
   const resize = () => window.dispatchEvent(new Event('resize'));
   const setText = () => { rowDay = day(); fillRow(); sp.style.animationDuration = Math.round(sp.textContent.length * 0.11) + 's'; };
@@ -715,11 +717,13 @@ try { (() => {
     if (!desc || !desc.get || !desc.configurable) return;
     Object.defineProperty(window, 'innerHeight', { configurable: true, get: () => realH() - (shrink ? BH : 0) });
     shrink = true; resize();
-    setTimeout(() => {
+    let n = 0;
+    const chk = () => {
       const sb = document.querySelector('.part.statusbar'), r = sb && sb.getBoundingClientRect();
-      if (!r || r.bottom > realH() - BH + 3) { shrink = false; resize(); console.warn('[cp-fx] news row off: layout ignored the shorter window'); return; }
+      if (!r || r.bottom > realH() - BH + 3) { if (++n < 14) { resize(); setTimeout(chk, 700); } else { shrink = false; resize(); console.warn('[cp-fx] news row off: layout ignored the shorter window'); } return; }
       document.body.appendChild(row);
-    }, 900);
+    };
+    setTimeout(chk, 900);
   };
   const rowOff = () => { shrink = false; row.remove(); resize(); };
   setText();

@@ -618,11 +618,11 @@
 }
 
 /* News: a running text row under the status bar (cyberpunk-fx.js shrinks the layout by 22px and docks it) and a BREAKING popup box with a glitch in and out at random times; headlines are generated from the date */
-.cp-nrow { position: fixed; left: 0; right: 0; bottom: 0; height: 22px; z-index: 40; display: flex; align-items: stretch; pointer-events: none; overflow: hidden; background: #07070b; border-top: 1px solid color-mix(in srgb, var(--cp-yellow) 45%, transparent); }
-.cp-nrow i { flex: none; padding: 0 16px 0 10px; background: var(--cp-yellow); color: #000; font: 700 12px/21px Rajdhani, Bahnschrift, sans-serif; font-style: normal; letter-spacing: 0.2em; clip-path: polygon(0 0, 100% 0, calc(100% - 7px) 100%, 0 100%); }
-.cp-nrow b { flex: none; padding: 0 10px 0 8px; color: var(--cp-red); font: 700 10px/21px "Share Tech Mono", Consolas, monospace; letter-spacing: 0.14em; animation: cp-blink 1.4s steps(2) infinite; }
-.cp-nrow div { flex: 1; overflow: hidden; white-space: nowrap; font: 12px/21px "Share Tech Mono", Consolas, monospace; color: #8FE9F5; -webkit-mask-image: linear-gradient(90deg, transparent, #000 3%, #000 97%, transparent); mask-image: linear-gradient(90deg, transparent, #000 3%, #000 97%, transparent); }
-.cp-nrow .run { display: inline-block; animation: cp-news-tk 120s linear infinite; }
+.cp-nrow { position: fixed; left: 0; right: 0; bottom: 0; height: 26px; z-index: 40; display: flex; align-items: stretch; pointer-events: none; overflow: hidden; background: #07070b; border-top: 1px solid color-mix(in srgb, var(--cp-yellow) 45%, transparent); }
+.cp-nrow i { flex: none; padding: 0 16px 0 10px; background: var(--cp-yellow); color: #000; font: 700 13px/25px Rajdhani, Bahnschrift, sans-serif; font-style: normal; letter-spacing: 0.2em; clip-path: polygon(0 0, 100% 0, calc(100% - 7px) 100%, 0 100%); }
+.cp-nrow b { flex: none; padding: 0 10px 0 8px; color: var(--cp-red); font: 700 10px/25px "Share Tech Mono", Consolas, monospace; letter-spacing: 0.14em; animation: cp-blink 1.4s steps(2) infinite; }
+.cp-nrow div { flex: 1; overflow: hidden; white-space: nowrap; font: 12px/25px "Share Tech Mono", Consolas, monospace; color: #8FE9F5; -webkit-mask-image: linear-gradient(90deg, transparent, #000 3%, #000 97%, transparent); mask-image: linear-gradient(90deg, transparent, #000 3%, #000 97%, transparent); }
+.cp-nrow .run { display: inline-flex; align-items: center; height: 100%; animation: cp-news-tk 120s linear infinite; }
 @keyframes cp-news-tk { to { transform: translateX(-50%); } }
 
 .cp-news { position: fixed; right: 24px; top: 56px; z-index: 99991; width: 350px; height: 132px; pointer-events: none; padding: 8px; border-radius: 10px; border: 1px solid #2b2b3a; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7), 0 0 22px rgba(255, 0, 60, 0.3); background: linear-gradient(145deg, #1b1b25, #0a0a10); animation: cp-news-in 0.9s steps(1, end) 1; }
@@ -692,3 +692,28 @@
 .cp-nrow.al i { background: var(--cp-red); color: #000; }
 .cp-nrow.al b { color: #fff; }
 @keyframes cp-nrow-al { 0% { background: rgba(255, 0, 60, 0.28); } 50% { background: #07070b; } }
+
+/* News row chips: roomier and vertically centred (the row is 26px, a chip is 16px, so 5px air above and below) */
+.cp-nrow .it { display: inline-flex; align-items: center; height: 100%; }
+.cp-nrow .tg { margin-right: 9px; padding: 0 7px; font-size: 10px; line-height: 14px; vertical-align: baseline; border-width: 1px; }
+.cp-nrow .sp { margin: 0 18px; }
+.cp-nrow .up, .cp-nrow .dn { margin: 0 12px 0 6px; }
+
+/* Market segment: each symbol, triangle and percent is one centred group */
+.cp-nrow .mk { display: inline-flex; align-items: center; gap: 6px; margin-right: 20px; }
+.cp-nrow .mk:last-child { margin-right: 0; }
+.cp-nrow .mk .up, .cp-nrow .mk .dn { margin: 0; }
+.cp-nrow .ar { width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; }
+.cp-nrow .ar.up { border-bottom: 7px solid #3CFF9A; }
+.cp-nrow .ar.dn { border-top: 7px solid var(--cp-red); }
+
+
+/* News row: broadcast signal bars that rise in turn, like a live transmission; faster during BREAKING */
+.cp-nrow .sg { flex: none; display: flex; align-items: flex-end; gap: 2px; height: 12px; align-self: center; margin: 0 0 0 10px; }
+.cp-nrow .sg span { width: 3px; background: var(--cp-red); box-shadow: 0 0 4px var(--cp-red); animation: cp-sig 1.2s linear infinite; }
+.cp-nrow .sg span:nth-child(1) { height: 4px; }
+.cp-nrow .sg span:nth-child(2) { height: 8px; animation-delay: 0.2s; }
+.cp-nrow .sg span:nth-child(3) { height: 12px; animation-delay: 0.4s; }
+.cp-nrow.al .sg span { animation-duration: 0.5s; }
+@keyframes cp-sig { 0%, 100% { opacity: 0.2; } 35%, 65% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .cp-nrow .sg span { animation: none; } }
