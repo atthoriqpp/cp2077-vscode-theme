@@ -946,3 +946,45 @@
 .cp-nrow .tg.wr { color: #0a0a0f; background: #E6E6EA; border-color: #E6E6EA; }
 .cp-nrow .tg.wr::before { content: "\25C9\00a0"; }
 .cp-nrow .wt { color: #FFFFFF; } /* same font, case and spacing as the Night City items; white is the only text difference */
+
+/* Weather alert card: same family as the NCPD dispatch (chamfer, left edge colour that says which kind), bottom left above the ICE card, dispatch and fixer call; the script sets bottom */
+.cp-wx { position: fixed; left: 12px; bottom: 54px; z-index: 99989; width: 340px; box-sizing: border-box; pointer-events: none; padding: 6px 12px 7px; background: rgba(5, 5, 8, 0.93); border-left: 3px solid var(--k, var(--cp-cyan));
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%); font-family: "Share Tech Mono", Consolas, monospace; animation: cp-scan-in 0.2s ease-out 1; }
+.cp-wx-red { --k: var(--cp-red); } .cp-wx-cyan { --k: var(--cp-cyan); } .cp-wx-yel { --k: var(--cp-yellow); } .cp-wx-mag { --k: #FF2BD6; }
+.cp-wx .h { font-size: 10px; letter-spacing: 0.14em; color: var(--k); }
+.cp-wx .b { margin-top: 3px; font-size: 12px; line-height: 1.35; color: #E6E6EA; }
+.cp-wx .f { margin-top: 3px; font-size: 9px; letter-spacing: 0.1em; color: #6B7A86; }
+.cp-wx.out { animation: cp-scan-glitch-out 0.9s steps(1, end) forwards; }
+
+/* Weather chip in the news row, left of the radio: white like the other real world items; grey when no location is set; yellow while a warning is active */
+.cp-nrow .wxc { flex: none; display: flex; align-items: center; padding: 0 12px; margin-left: 4px; border-left: 1px solid #1d2a30; pointer-events: auto; cursor: pointer; font: 11px "Share Tech Mono", Consolas, monospace; letter-spacing: 0.1em; color: #E6E6EA; white-space: nowrap; }
+.cp-nrow .wxc-t::before { content: "\25C9\00a0"; }
+.cp-nrow .wxc.off { color: #6B7A86; } .cp-nrow .wxc.off:hover { color: #E6E6EA; }
+.cp-nrow .wxc.al { color: var(--cp-yellow); }
+.cp-nrow .wxc.err { color: var(--cp-red); }
+
+/* Weather alert v2, same family as the ICE card: hazard stripe in the kind's colour (it says which kind), a bordered icon tile, a threat meter, an RGB split on the title and short glitch bursts (class gl, about 170 ms, stepped) */
+.cp-wx { width: 340px; padding: 0 0 9px; border-left: 0; overflow: hidden; clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px); animation: cp-wx-in 0.35s steps(1, end) 1; }
+.cp-wx::before { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--k); opacity: 0.7; }
+.cp-wx .st { height: 5px; background: repeating-linear-gradient(-45deg, var(--k) 0 6px, #050508 6px 12px); }
+.cp-wx .hd { display: flex; justify-content: space-between; align-items: center; padding: 6px 12px 0; font-size: 9px; letter-spacing: 0.16em; color: var(--k); }
+.cp-wx .lv { display: flex; align-items: center; gap: 4px; }
+.cp-wx .lv em { font-style: normal; margin-right: 4px; color: #6B7A86; }
+.cp-wx .lv i { width: 10px; height: 6px; background: #1a1f26; transform: skewX(-20deg); }
+.cp-wx .lv i.on { background: var(--k); }
+.cp-wx .row { display: flex; gap: 12px; align-items: flex-start; padding: 8px 12px 0; }
+.cp-wx .ic { flex: none; width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; color: var(--k); border: 1px solid color-mix(in srgb, var(--k) 50%, transparent); clip-path: polygon(0 0, calc(100% - 7px) 0, 100% 7px, 100% 100%, 0 100%); }
+.cp-wx .ic svg { display: block; }
+.cp-wx .tx { flex: 1; min-width: 0; }
+.cp-wx .tx .h { font-size: 14px; letter-spacing: 0.12em; color: var(--k); } /* the RGB split shows only during a glitch burst (.gl), so the small title stays sharp */
+.cp-wx .tx .b { margin-top: 4px; font-size: 12px; line-height: 1.35; color: #E6E6EA; }
+.cp-wx .ft { display: flex; justify-content: space-between; padding: 8px 12px 0; font-size: 9px; letter-spacing: 0.1em; color: #6B7A86; }
+.cp-wx .ft .hx { color: #4a5560; }
+.cp-wx.gl .tx .h { text-shadow: 4px 0 var(--cp-red), -4px 0 var(--cp-cyan); }
+.cp-wx.gl .ic { transform: translateX(4px); }
+.cp-wx.gl .st { background: repeating-linear-gradient(-45deg, var(--cp-red) 0 6px, #050508 6px 12px); }
+@keyframes cp-wx-in { 0% { opacity: 0; transform: translateX(-18px); } 20% { opacity: 1; transform: translateX(6px); clip-path: inset(30% 0 40% 0); } 40% { transform: translateX(-4px); clip-path: inset(0 0 55% 0); } 60% { transform: translateX(3px); clip-path: inset(50% 0 0 0); } 80% { transform: translateX(-2px); } 100% { transform: none; } }
+/* sky icon in the weather chip; it replaces the globe glyph */
+.cp-nrow .wxc-t::before { content: none; }
+.cp-nrow .wxc-i { display: inline-flex; margin-right: 6px; }
+.cp-nrow .wxc-i svg { display: block; }

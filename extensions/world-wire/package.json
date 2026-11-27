@@ -4,29 +4,105 @@
   "description": "Fetches a few public news feeds and crypto and stock quotes and hands them to the cyberpunk news row through a hidden status bar item. No tracking, no keys.",
   "version": "0.0.1",
   "publisher": "local",
-  "engines": { "vscode": "^1.70.0" },
-  "activationEvents": ["onStartupFinished"],
+  "engines": {
+    "vscode": "^1.70.0"
+  },
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "main": "./extension.js",
   "contributes": {
     "configuration": {
       "title": "World Wire",
       "properties": {
-        "worldWire.enabled": { "type": "boolean", "default": true, "description": "Fetch real world headlines and prices for the news row." },
-        "worldWire.refreshMinutes": { "type": "number", "default": 10, "minimum": 5, "description": "Minutes between fetches." },
+        "worldWire.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Fetch real world headlines and prices for the news row."
+        },
+        "worldWire.refreshMinutes": {
+          "type": "number",
+          "default": 10,
+          "minimum": 5,
+          "description": "Minutes between fetches."
+        },
         "worldWire.feeds": {
           "type": "array",
           "description": "RSS feeds to read (https only). Only the item titles are used.",
-          "items": { "type": "object", "properties": { "name": { "type": "string" }, "url": { "type": "string" } }, "required": ["name", "url"] },
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "url": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "url"
+            ]
+          },
           "default": [
-            { "name": "BBC", "url": "https://feeds.bbci.co.uk/news/world/rss.xml" },
-            { "name": "GUARDIAN", "url": "https://www.theguardian.com/world/rss" },
-            { "name": "NPR", "url": "https://feeds.npr.org/1001/rss.xml" },
-            { "name": "AL JAZEERA", "url": "https://www.aljazeera.com/xml/rss/all.xml" }
+            {
+              "name": "BBC",
+              "url": "https://feeds.bbci.co.uk/news/world/rss.xml"
+            },
+            {
+              "name": "GUARDIAN",
+              "url": "https://www.theguardian.com/world/rss"
+            },
+            {
+              "name": "NPR",
+              "url": "https://feeds.npr.org/1001/rss.xml"
+            },
+            {
+              "name": "AL JAZEERA",
+              "url": "https://www.aljazeera.com/xml/rss/all.xml"
+            }
           ]
         },
-        "worldWire.crypto": { "type": "array", "items": { "type": "string" }, "default": ["bitcoin", "ethereum", "solana"], "description": "CoinGecko coin ids for the price segment." },
-        "worldWire.stocks": { "type": "array", "items": { "type": "string" }, "default": ["^GSPC", "^IXIC", "^DJI", "AAPL", "NVDA", "TSLA", "MSFT"], "description": "Yahoo Finance symbols for the price segment (indices start with ^)." }
+        "worldWire.crypto": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "bitcoin",
+            "ethereum",
+            "solana"
+          ],
+          "description": "CoinGecko coin ids for the price segment."
+        },
+        "worldWire.stocks": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "^GSPC",
+            "^IXIC",
+            "^DJI",
+            "AAPL",
+            "NVDA",
+            "TSLA",
+            "MSFT"
+          ],
+          "description": "Yahoo Finance symbols for the price segment (indices start with ^)."
+        },
+        "worldWire.location": {
+          "type": "string",
+          "default": "",
+          "description": "Weather location. Set it with the command \"World Wire: Set Location\" (or click the weather chip in the news row), which searches real places; or type a city name or \"lat,lon\". Empty turns weather off. Only this text is sent to Open-Meteo."
+        }
       }
-    }
+    },
+    "commands": [
+      {
+        "command": "worldWire.setLocation",
+        "title": "World Wire: Set Location"
+      }
+    ]
   }
 }

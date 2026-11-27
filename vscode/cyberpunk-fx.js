@@ -206,8 +206,10 @@ try { (() => {
   const SIZE = 16, FRAME = 120, STANDBY = 3 * 60000; // FRAME: ms between steps, about 14 fps
   let cv = null, ctx = null, host = null, tag = null, drops = [], acc = [], spd = [], w = 0, h = 0, last = 0, lastInput = Date.now(), force = false; // force: cpIdle() shows standby now, until the next click or key
   const stop = () => { if (cv) cv.remove(); if (tag) tag.remove(); cv = ctx = host = tag = null; };
+  // a webview (markdown preview) is an iframe: its own clicks never reach this page, and VS Code re-dispatches its keys on window, not document
+  const wvFocus = () => { const a = document.activeElement; return !!a && /^(IFRAME|WEBVIEW)$/i.test(a.tagName); };
   // mousemove counts here (wakes standby) but not for the humanity drift clock
-  ['keydown', 'mousedown', 'mousemove', 'wheel'].forEach((e) => document.addEventListener(e, (ev) => {
+  ['keydown', 'mousedown', 'mousemove', 'wheel'].forEach((e) => window.addEventListener(e, (ev) => {
     if (tag && (e === 'mousemove' || e === 'wheel')) return; // on standby only a click or a typed key wakes it, so alt tabbing or a nudge of the mouse does not
     if (tag && e === 'keydown' && ['Alt', 'Tab', 'Control', 'Shift', 'Meta', 'OS'].includes(ev.key)) return;
     lastInput = Date.now(); force = false;
@@ -228,7 +230,7 @@ try { (() => {
     const n = new Date(), ct = n.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
     L.clock.textContent = ct; L.sls.textContent = ct;
     const seed = [...n.toLocaleDateString('en-CA')].reduce((a, c) => a + c.charCodeAt(0), 0);
-    L.date.textContent = n.toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short' }).replace(',', '').toUpperCase() + ' // NIGHT CITY // ' + (8 + seed % 14) + 'C ' + SKY[seed % SKY.length];
+    L.date.textContent = n.toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short' }).replace(',', '').toUpperCase() + ' // NIGHT CITY // ' + (window.cpWxData ? window.cpWxData.temp + 'C ' + String(window.cpWxData.sky).toUpperCase() : (8 + seed % 14) + 'C ' + SKY[seed % SKY.length]); // real weather when a location is set
     const s = (Date.now() - cpStats.t0) / 1000;
     L.cells[0].textContent = two(Math.floor(s / 3600)) + ':' + two(Math.floor(s % 3600 / 60));
     L.cells[1].textContent = cpStats.ice; L.cells[2].textContent = cpStats.longest ? mmss(cpStats.longest) : '--:--'; L.cells[3].textContent = cpStats.eb.toLocaleString('en-US');
@@ -248,13 +250,15 @@ try { (() => {
   };
   every(() => { // once a second: refresh the readouts, now and then a 170 ms glitch burst (class gl)
     if (!tag) { L = null; return; }
+    if (wvFocus()) { lastInput = Date.now(); force = false; stop(); return; } // a click landed in a webview under the card
     upd(); place();
     if (Math.random() < 0.3) { tag.classList.add('gl'); const t = tag; setTimeout(() => t.classList.remove('gl'), 170); }
   }, 1000);
   window.cpIdle = () => { force = true; }; // test the standby card without waiting 3 minutes
   const findHost = () => {
     if (document.hidden) return null;
-    const idle = force || (Date.now() - lastInput > STANDBY && !document.querySelector('.monaco-workbench.cp-busy'));
+    const lim = wvFocus() && document.querySelector('.part.editor') && document.querySelector('.part.editor').contains(document.activeElement) ? 5 * STANDBY : STANDBY; // reading a preview sends no input we can see: wait 15 min there
+    const idle = force || (Date.now() - lastInput > lim && !document.querySelector('.monaco-workbench.cp-busy'));
     if (idle) { // the editor part, or the panel when the editor is closed or hidden (a hidden part has no size and would be created and dropped every half second)
       const seen = (el) => { if (!el) return false; const b = el.getBoundingClientRect(); return b.width > 2 && b.height > 2; };
       const ed = document.querySelector('.part.editor'), pn = document.querySelector('.part.panel');
@@ -301,6 +305,8 @@ try { (() => {
       cv.style.cssText = 'position:fixed;pointer-events:none;z-index:4;';
       document.body.appendChild(cv); ctx = cv.getContext('2d');
       if (el.classList.contains('part')) { // standby: whole editor part
+        cv.style.pointerEvents = 'auto'; // the canvas catches the wake-up click, so it cannot fall into a webview below
+        if (wvFocus()) document.activeElement.blur(); // a focused webview would count as a click on it and wake at once
         tag = document.createElement('div'); tag.className = 'cp-standby';
         const title = document.createElement('div'); title.className = 't'; title.textContent = 'NEURAL LINK IDLE';
         const hz = mkE('div', 'hz'), bar = mkE('div', 'bar'); bar.append(mkE('span', '', 'NCOS // SESSION LOCKED'), mkE('span', 'nt', ''));
@@ -462,6 +468,54 @@ try { (() => {
     loop(4, 4);
   }, (min + Math.random() * span) * 60000);
   loop(1, 1);
+})(); } catch (e) { console.error("[cp-fx]", e); }
+
+// Weather alert: when the world-wire extension reports rain, a storm, snow, strong wind, heat or smog in the next 6 hours, a card shows bottom left, above the ICE card, dispatch and fixer call: hazard stripe in the kind's colour, a line icon, a threat meter, and short glitch bursts while it is up. Each kind shows at most once per 3 hours; cpWeather('rain') shows a demo (rain, storm, snow, wind, heat, smog). window.cpWxIcon(name, px) draws the line icons for the weather chip too
+try { (() => {
+  const COOL = 3 * 3600 * 1000, KIND = { storm: 'red', snow: 'cyan', rain: 'cyan', wind: 'yel', heat: 'red', smog: 'mag' }, KICON = { storm: 'storm', snow: 'snow', rain: 'rain', wind: 'wind', heat: 'sun', smog: 'fog' };
+  const SVG = 'http://www.w3.org/2000/svg', CLOUD = 'M7 14h10a3.5 3.5 0 0 0 0-7 5 5 0 0 0-9.5 1.3A3 3 0 0 0 7 14z';
+  const PATH = { // angular line icons on a 24 grid
+    sun: ['M8.5 12a3.5 3.5 0 1 0 7 0a3.5 3.5 0 1 0-7 0', 'M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1'],
+    cloud: ['M7 18h10a4 4 0 0 0 0-8 5.5 5.5 0 0 0-10.5 1.5A3.3 3.3 0 0 0 7 18z'],
+    rain: [CLOUD, 'M8 17l-1.4 3.5M12 17l-1.4 3.5M16 17l-1.4 3.5'],
+    storm: [CLOUD, 'M12.8 14.5L10 18.5h3.4L11.4 22'],
+    snow: ['M12 3v18M4.2 7.5l15.6 9M19.8 7.5l-15.6 9', 'M10 4.5l2 2 2-2M10 19.5l2-2 2 2'],
+    wind: ['M3 9h11a2.5 2.5 0 1 0-2.5-2.5', 'M3 13h16a2.5 2.5 0 1 1-2.5 2.5', 'M3 17h8'],
+    fog: ['M4 7h16M6 11h14M4 15h12M8 19h10'],
+  };
+  const icon = (name, px) => {
+    const s = document.createElementNS(SVG, 'svg'); s.setAttribute('viewBox', '0 0 24 24'); s.setAttribute('width', px); s.setAttribute('height', px);
+    s.setAttribute('fill', 'none'); s.setAttribute('stroke', 'currentColor'); s.setAttribute('stroke-width', '1.6'); s.setAttribute('stroke-linecap', 'square'); s.setAttribute('stroke-linejoin', 'miter');
+    for (const dd of PATH[name] || PATH.cloud) { const p = document.createElementNS(SVG, 'path'); p.setAttribute('d', dd); s.appendChild(p); }
+    return s;
+  };
+  window.cpWxIcon = icon;
+  const mk = (tag, cls, text) => { const x = document.createElement(tag); x.className = cls; if (text) x.textContent = text; return x; };
+  const hex = () => '0x' + Array.from({ length: 3 }, () => Math.floor(Math.random() * 65536).toString(16).toUpperCase().padStart(4, '0')).join(' ');
+  let card = null, timers = []; const LS = 'cpWxShown'; let shown = {}; try { shown = JSON.parse(window.localStorage.getItem(LS)) || {}; } catch (e) { shown = {}; }
+  const saveShown = () => { try { window.localStorage.setItem(LS, JSON.stringify(shown)); } catch (e) {} };
+  const stack = () => { if (!card) return; const q = (s) => { const el = document.querySelector(s); return el ? el.offsetHeight + 8 : 0; }; card.style.bottom = (54 + q('.cp-ice') + q('.cp-scan') + q('.cp-call')) + 'px'; };
+  const show = (al) => {
+    if (card) { timers.forEach(clearTimeout); timers = []; card.remove(); card = null; }
+    const c = mk('div', 'cp-wx cp-wx-' + KIND[al.kind]), lvl = al.kind === 'storm' || /HEAVY/.test(String(al.title)) ? 3 : 2;
+    const hd = mk('div', 'hd'), lv = mk('span', 'lv'), row = mk('div', 'row'), ic = mk('div', 'ic'), tx = mk('div', 'tx'), ft = mk('div', 'ft');
+    lv.appendChild(mk('em', '', 'THREAT')); for (let k = 0; k < 3; k++) lv.appendChild(mk('i', k < lvl ? 'on' : ''));
+    hd.append(mk('span', '', 'NC WEATHER SERVICE'), lv);
+    ic.appendChild(icon(KICON[al.kind], 28)); tx.append(mk('div', 'h', String(al.title).slice(0, 40)), mk('div', 'b', String(al.text).slice(0, 170))); row.append(ic, tx);
+    ft.append(mk('span', '', 'OPEN-METEO // NEXT 6 HOURS'), mk('span', 'hx', hex()));
+    c.append(mk('div', 'st'), hd, row, ft); document.body.appendChild(c); card = c; stack();
+    timers.push(setTimeout(() => c.classList.add('out'), 9000), setTimeout(() => { c.remove(); if (card === c) card = null; }, 9900));
+  };
+  every(() => {
+    stack();
+    if (card && !card.classList.contains('out') && Math.random() < 0.4) { const c = card; c.classList.add('gl'); setTimeout(() => c.classList.remove('gl'), 170); } // a short glitch burst now and then
+    const w = window.cpWxData, al = w && w.alert;
+    if (!al || document.hidden || !KIND[al.kind] || typeof al.title !== 'string' || typeof al.text !== 'string') return;
+    const last = Number(shown[al.kind]) || 0, nowT = Date.now(); if (last <= nowT && nowT - last < COOL) return;
+    shown[al.kind] = nowT; saveShown(); show(al);
+  }, 1000);
+  const DEMO = { rain: ['RAIN WARNING', 'Rain between 15:00 and 17:00, up to 2.4 mm an hour. Chance 70 percent. Take cover.'], storm: ['STORM WARNING', 'Thunderstorm between 16:00 and 17:00. Gusts up to 72 km/h. Stay indoors.'], snow: ['SNOW WARNING', 'Snow between 07:00 and 09:00. Roads will turn slick. Dress warm.'], wind: ['HIGH WIND WARNING', 'Gusts up to 65 km/h in the next hours. Secure loose gear.'], heat: ['HEAT ALERT', 'It is 36 C outside. Drink water and stay out of the sun.'], smog: ['SMOG ALERT', 'Air quality index 170. Wear a mask outside.'] };
+  window.cpWeather = (kind) => { const k = DEMO[kind] ? kind : 'rain'; show({ kind: k, title: DEMO[k][0], text: DEMO[k][1] }); };
 })(); } catch (e) { console.error("[cp-fx]", e); }
 
 // ICE trace: while Claude works, a card bottom left fills one segment per 10 percent of the trace (cyan, yellow, then red) with a percent readout, a hex stream and rare glitch bursts. The percent follows 100 * (1 - e^(-t/100)), so it keeps creeping up on a long turn and never sticks (99.9 after about 10 minutes); after 10 minutes the card stays still. DOM is only touched when a value changes. It shows after 10 s of work, and on finish reads JACKED OUT with the real run time, then glitches out. Reads the cp-busy flag once a second; cpIce(s) shows a demo
@@ -947,13 +1001,17 @@ try { (() => {
     }
     return null;
   };
-  let wire = [], quotes = [], wireT = 0;
+  let wire = [], quotes = [], wx = null, wireT = 0, wxSeen = false, wxErr = '', paintWx = () => {};
+  const okn = Number.isFinite, wxLine = () => [String(wx.sky).toUpperCase().slice(0, 16), wx.temp + 'C', 'WIND ' + wx.wind + ' KPH', wx.aqi !== null ? 'SMOG INDEX ' + wx.aqi : '', wx.uv !== null ? 'RAD ' + wx.uv : ''].filter(Boolean).join(' // ');
   const fmtPrice = (p) => (p >= 1000 ? Math.round(p).toLocaleString('en-US') : p >= 100 ? p.toFixed(1) : p.toFixed(2));
   every(() => { // a new set arrives every 20 minutes at most; redraw the row only then
     const p = wireRead();
-    if (p && p.t !== wireT) { wireT = p.t; wire = p.items.filter((x) => Array.isArray(x) && typeof x[0] === 'string' && typeof x[1] === 'string').slice(0, 40).map((x) => [x[0].slice(0, 14), x[1].slice(0, 140)]); quotes = (Array.isArray(p.quotes) ? p.quotes : []).filter((x) => Array.isArray(x) && typeof x[0] === 'string' && Number.isFinite(x[1]) && Number.isFinite(x[2])).slice(0, 24).map((x) => [x[0].slice(0, 8), x[1], x[2]]); if (wire.length || quotes.length) setText(); }
+    if (p && p.t !== wireT) { wireT = p.t; wire = p.items.filter((x) => Array.isArray(x) && typeof x[0] === 'string' && typeof x[1] === 'string').slice(0, 40).map((x) => [x[0].slice(0, 14), x[1].slice(0, 140)]); quotes = (Array.isArray(p.quotes) ? p.quotes : []).filter((x) => Array.isArray(x) && typeof x[0] === 'string' && Number.isFinite(x[1]) && Number.isFinite(x[2])).slice(0, 24).map((x) => [x[0].slice(0, 8), x[1], x[2]]); const w = p.wx; // real weather from the extension; null when no location is set
+    wx = w && typeof w === 'object' && okn(w.temp) && okn(w.wind) && typeof w.sky === 'string' ? { temp: Math.round(w.temp), wind: Math.round(w.wind), sky: w.sky.slice(0, 16), aqi: okn(w.aqi) ? Math.round(w.aqi) : null, uv: okn(w.uv) ? Math.round(w.uv) : null, rise: typeof w.rise === 'string' ? w.rise.slice(0, 5) : null, set: typeof w.set === 'string' ? w.set.slice(0, 5) : null, alert: w.alert && typeof w.alert === 'object' ? w.alert : null } : null;
+    window.cpWxData = wx; wxSeen = true; wxErr = p.err && typeof p.err.WEATHER === 'string' ? p.err.WEATHER.slice(0, 60) : ''; paintWx();
+    if (wire.length || quotes.length || wx) setText(); }
   }, 20000);
-  window.cpWire = () => { const p = wireRead(); return JSON.stringify({ shown: wire.length, quotes: quotes.length, stamp: wireT, errors: p ? p.err : 'no hidden item found (extension not loaded?)' }); };
+  window.cpWire = () => { const p = wireRead(); return JSON.stringify({ shown: wire.length, quotes: quotes.length, weather: !!wx, stamp: wireT, errors: p ? p.err : 'no hidden item found (extension not loaded?)' }); };
   const fillRow = () => { // news with coloured tags, a made-up market segment every 8 stories, an ad every 5
     sp.textContent = '';
     const r = rng(hash(day() + 'ad')), news = batch('t', 20), ads = A.map((s) => fill(s, r).replace(/^AD: /, '').toUpperCase());
@@ -971,6 +1029,7 @@ try { (() => {
         }
         add('LIVE MKT', 'wr wr-mkt', ...parts);
       }
+      if (wx && k === 11) add('LIVE WX', 'wr wr-wx', lf('bd2 wt', wxLine())); // one real weather line per row
       if (k % 5 === 4) add('AD', 'ad', lf('bd2', ads[(k / 5 | 0) % ads.length]));
       if (k % 8 === 7) {
         const pool = SYM.slice(), parts = [];
@@ -1051,6 +1110,29 @@ try { (() => {
   const rd = mk('span', 'rd'), eq = mk('span', 'rd-eq'), fm = mk('span', 'rd-fm'), ttl = mk('span', 'rd-t'), inn = mk('span', ''), pg = mk('span', 'rd-pg'), gh = mk('span', 'rd-t rd-gh'); let tw = 250, fw = 0; // gh: hidden twin used to measure a title
   for (let k = 0; k < 5; k++) eq.appendChild(mk('span', ''));
   ttl.appendChild(inn); rd.append(eq, fm, ttl, pg, gh); row.appendChild(rd);
+  // weather chip, left of the radio: real temperature and sky when a location is set, SET WEATHER when not (shown once the world-wire extension is seen). A click presses the extension's hidden status bar item, which opens the location box; hover lists the details
+  const wc = mk('span', 'wxc'), wci = mk('span', 'wxc-i'), wct = mk('span', 'wxc-t'); wc.append(wci, wct); wc.style.display = 'none'; row.insertBefore(wc, rd);
+  let wpop = null;
+  const skyIcon = (s) => (/STORM/.test(s) ? 'storm' : /SNOW/.test(s) ? 'snow' : /RAIN|DRIZZLE/.test(s) ? 'rain' : /FOG/.test(s) ? 'fog' : /CLEAR/.test(s) ? 'sun' : 'cloud');
+  const wxClose = () => { if (wpop) { wpop.remove(); wpop = null; } };
+  paintWx = () => { wc.style.display = wxSeen ? '' : 'none'; wc.className = 'wxc' + (wx ? (wx.alert ? ' al' : '') : wxErr ? ' off err' : ' off'); wct.textContent = wx ? wx.temp + 'C ' + String(wx.sky).toUpperCase() : wxErr ? 'WEATHER ERROR' : 'SET WEATHER'; wci.textContent = ''; if (window.cpWxIcon) wci.appendChild(window.cpWxIcon(wx ? skyIcon(String(wx.sky).toUpperCase()) : 'cloud', 13)); };
+  const wxHover = () => {
+    wxClose(); if (!document.body) return;
+    wpop = mk('div', 'cp-rpop'); wpop.style.setProperty('--rc', wx && wx.alert ? '#FCEE0A' : '#E6E6EA');
+    const row2 = (a, b) => { const r = mk('div', ''); r.append(mk('span', '', a), mk('span', 't', b)); wpop.appendChild(r); };
+    if (!wx) { wpop.appendChild(mk('h4', '', wxErr ? 'WEATHER // ERROR' : 'WEATHER // OFF')); row2(wxErr ? wxErr.toUpperCase() : 'CLICK TO SET YOUR CITY', ''); const f = mk('div', 'ft'); f.append(mk('span', '', 'ONLY THE CITY TEXT IS SENT'), mk('span', '', 'OPEN-METEO')); wpop.appendChild(f); }
+    else {
+      wpop.appendChild(mk('h4', '', 'WEATHER // NOW'));
+      row2('SKY', String(wx.sky).toUpperCase() + ' ' + wx.temp + 'C'); row2('WIND', wx.wind + ' KPH');
+      if (wx.aqi !== null) row2('SMOG INDEX', String(wx.aqi)); if (wx.uv !== null) row2('RAD', String(wx.uv));
+      if (wx.set) row2('NEON ON', wx.set); if (wx.rise) row2('DAWN', wx.rise);
+      row2('WARNING', wx.alert && typeof wx.alert.title === 'string' ? wx.alert.title.slice(0, 30) : 'NONE');
+      const f = mk('div', 'ft'); f.append(mk('span', '', 'CLICK: CHANGE LOCATION'), mk('span', '', 'OPEN-METEO')); wpop.appendChild(f);
+    }
+    document.body.appendChild(wpop);
+  };
+  wc.addEventListener('mouseenter', wxHover); wc.addEventListener('mouseleave', wxClose);
+  wc.addEventListener('click', () => { wxClose(); const it = Array.from(document.querySelectorAll('.part.statusbar .statusbar-item')).find((x) => x.id && x.id.indexOf('wirefeed') !== -1); const a = it && (it.querySelector('a') || it); if (a) a.click(); });
   const paint = () => { rd.style.setProperty('--rc', col(R[st][0])); };
   const queue = () => { // today's shuffled order for this station, and where the clock is in it
     const s = R[st], r = rng(hash(day() + s[0])), o = s[2].map((t) => [r(), t]).sort((x, y) => x[0] - y[0]).map((x) => x[1]);
