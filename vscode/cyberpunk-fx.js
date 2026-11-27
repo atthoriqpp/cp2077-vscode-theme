@@ -204,13 +204,13 @@ try { (() => {
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   const GLYPHS = 'ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿ0123456789ABCDEF<>/|=+*';
   const SIZE = 16, FRAME = 120, STANDBY = 3 * 60000; // FRAME: ms between steps, about 14 fps
-  let cv = null, ctx = null, host = null, tag = null, drops = [], w = 0, h = 0, last = 0, lastInput = Date.now();
+  let cv = null, ctx = null, host = null, tag = null, drops = [], acc = [], spd = [], w = 0, h = 0, last = 0, lastInput = Date.now(), force = false; // force: cpIdle() shows standby now, until the next click or key
   const stop = () => { if (cv) cv.remove(); if (tag) tag.remove(); cv = ctx = host = tag = null; };
   // mousemove counts here (wakes standby) but not for the humanity drift clock
   ['keydown', 'mousedown', 'mousemove', 'wheel'].forEach((e) => document.addEventListener(e, (ev) => {
     if (tag && (e === 'mousemove' || e === 'wheel')) return; // on standby only a click or a typed key wakes it, so alt tabbing or a nudge of the mouse does not
     if (tag && e === 'keydown' && ['Alt', 'Tab', 'Control', 'Shift', 'Meta', 'OS'].includes(ev.key)) return;
-    lastInput = Date.now();
+    lastInput = Date.now(); force = false;
     if (tag) stop();
   }, { passive: true, capture: true }));
   every(() => { // loading-screen style: a new line every 8 s while on standby
@@ -224,7 +224,8 @@ try { (() => {
   const SKY = ['RAIN', 'ACID RAIN', 'SMOG', 'FOG', 'CLEAR', 'STORM'];
   let L = null;
   const upd = () => {
-    if (!L) return; const n = new Date(), ct = n.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    if (!L) return; const nt = document.querySelector('.cp-standby .nt'); if (nt) { nt.textContent = navigator.onLine ? 'NET LINK UP' : 'NET LINK DOWN'; nt.classList.toggle('dn', !navigator.onLine); }
+    const n = new Date(), ct = n.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
     L.clock.textContent = ct; L.sls.textContent = ct;
     const seed = [...n.toLocaleDateString('en-CA')].reduce((a, c) => a + c.charCodeAt(0), 0);
     L.date.textContent = n.toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short' }).replace(',', '').toUpperCase() + ' // NIGHT CITY // ' + (8 + seed % 14) + 'C ' + SKY[seed % SKY.length];
@@ -232,6 +233,10 @@ try { (() => {
     L.cells[0].textContent = two(Math.floor(s / 3600)) + ':' + two(Math.floor(s % 3600 / 60));
     L.cells[1].textContent = cpStats.ice; L.cells[2].textContent = cpStats.longest ? mmss(cpStats.longest) : '--:--'; L.cells[3].textContent = cpStats.eb.toLocaleString('en-US');
     L.hx.textContent = '0x' + Array.from({ length: 3 }, () => Math.floor(Math.random() * 65536).toString(16).toUpperCase().padStart(4, '0')).join(' ');
+  };
+  const place = () => { // centre on the host (the editor part), not on the window
+    if (!tag || !host) return; const r = host.getBoundingClientRect();
+    tag.style.left = (r.left + r.width / 2) + 'px'; tag.style.top = (r.top + r.height / 2) + 'px'; tag.style.width = Math.min(520, Math.max(300, r.width - 32)) + 'px';
   };
   const lock = () => {
     const lk = mkE('div', 'lk'), mid = mkE('div', 'mid'), box = mkE('div', 'cb'), clock = mkE('div', 'ck'), sl = mkE('div', 'sl'), sls = mkE('span', '');
@@ -243,38 +248,48 @@ try { (() => {
   };
   every(() => { // once a second: refresh the readouts, now and then a 170 ms glitch burst (class gl)
     if (!tag) { L = null; return; }
-    upd();
+    upd(); place();
     if (Math.random() < 0.3) { tag.classList.add('gl'); const t = tag; setTimeout(() => t.classList.remove('gl'), 170); }
   }, 1000);
+  window.cpIdle = () => { force = true; }; // test the standby card without waiting 3 minutes
   const findHost = () => {
     if (document.hidden) return null;
-    const idle = Date.now() - lastInput > STANDBY && !document.querySelector('.monaco-workbench.cp-busy');
-    if (idle) return document.querySelector('.part.editor');
+    const idle = force || (Date.now() - lastInput > STANDBY && !document.querySelector('.monaco-workbench.cp-busy'));
+    if (idle) { // the editor part, or the panel when the editor is closed or hidden (a hidden part has no size and would be created and dropped every half second)
+      const seen = (el) => { if (!el) return false; const b = el.getBoundingClientRect(); return b.width > 2 && b.height > 2; };
+      const ed = document.querySelector('.part.editor'), pn = document.querySelector('.part.panel');
+      return seen(ed) ? ed : seen(pn) ? pn : null;
+    }
     const g = document.querySelector('.part.editor .editor-group-container.empty');
     return g ? (g.querySelector('.editor-container') || g) : null;
   };
   const loop = (t) => {
     if (!cv) return;
     requestAnimationFrame(loop);
-    if (t - last < FRAME) return;
-    if (Date.now() - lastInput > 600000) return; // frozen on the last frame until you come back
-    last = t;
+    if (t - last < (tag ? 33 : FRAME)) return; // standby: about 30 frames a second; a plain empty editor group stays light at 8
+    const dt = Math.min((t - last) / 1000, 0.25); last = t;
     const r = host.getBoundingClientRect();
     if (!host.isConnected || r.width < 2 || r.height < 2) { stop(); return; }
     if (Math.round(r.width) !== w || Math.round(r.height) !== h) {
       w = Math.round(r.width); h = Math.round(r.height); cv.width = w; cv.height = h;
       drops = Array.from({ length: Math.ceil(w / SIZE) }, () => -Math.random() * (h / SIZE));
+      acc = drops.map(() => 0); spd = drops.map(() => 10 + Math.random() * 14); // each column falls at its own speed, 10 to 24 cells a second
       ctx.fillStyle = '#0D0D12'; ctx.fillRect(0, 0, w, h);
     }
     cv.style.left = r.left + 'px'; cv.style.top = r.top + 'px';
-    ctx.fillStyle = 'rgba(13,13,18,0.13)'; ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = 'rgba(13,13,18,' + (tag ? 0.09 : 0.13) + ')'; ctx.fillRect(0, 0, w, h);
     ctx.font = SIZE + 'px "Share Tech Mono", monospace';
     drops.forEach((y, i) => {
-      if (y >= 0) {
-        ctx.fillStyle = Math.random() < 0.03 ? 'rgba(252,238,10,0.85)' : 'rgba(2,215,242,0.5)';
-        ctx.fillText(GLYPHS[Math.floor(Math.random() * GLYPHS.length)], i * SIZE, y * SIZE);
+      acc[i] += spd[i] * dt;
+      while (acc[i] >= 1) { // one glyph per cell passed, so a slow frame still draws an unbroken trail
+        acc[i] -= 1;
+        if (y >= 0) {
+          ctx.fillStyle = Math.random() < 0.03 ? 'rgba(252,238,10,0.85)' : 'rgba(2,215,242,0.5)';
+          ctx.fillText(GLYPHS[Math.floor(Math.random() * GLYPHS.length)], i * SIZE, y * SIZE);
+        }
+        y = (y * SIZE > h && Math.random() > 0.96) ? -Math.random() * 10 : y + 1;
       }
-      drops[i] = (y * SIZE > h && Math.random() > 0.96) ? -Math.random() * 10 : y + 1;
+      drops[i] = y;
     });
   };
   every(() => {
@@ -288,9 +303,9 @@ try { (() => {
       if (el.classList.contains('part')) { // standby: whole editor part
         tag = document.createElement('div'); tag.className = 'cp-standby';
         const title = document.createElement('div'); title.className = 't'; title.textContent = 'NEURAL LINK IDLE';
-        const hz = mkE('div', 'hz'), bar = mkE('div', 'bar'); bar.append(mkE('span', '', 'NCOS // SESSION LOCKED'), mkE('span', 'r', 'LINK IDLE'));
+        const hz = mkE('div', 'hz'), bar = mkE('div', 'bar'); bar.append(mkE('span', '', 'NCOS // SESSION LOCKED'), mkE('span', 'nt', ''));
         tag.append(hz, bar, title, window.cpQuote(), lock());
-        document.body.appendChild(tag);
+        document.body.appendChild(tag); place();
       }
       requestAnimationFrame(loop);
     }
@@ -419,7 +434,7 @@ try { (() => {
   const SECS = 20;
   let card = null, iv = null, total = 0, lastInput = Date.now();
   for (const ev of ['keydown', 'pointerdown', 'mousemove']) window.addEventListener(ev, () => { lastInput = Date.now(); }, { passive: true });
-  const stack = () => { const s = document.querySelector('.cp-scan'), i = document.querySelector('.cp-ice'); if (card) card.style.bottom = (32 + (i ? i.offsetHeight + 8 : 0) + (s ? s.offsetHeight + 8 : 0)) + 'px'; }; // sits above the ICE card and the dispatch
+  const stack = () => { const s = document.querySelector('.cp-scan'), i = document.querySelector('.cp-ice'); if (card) card.style.bottom = (54 + (i ? i.offsetHeight + 8 : 0) + (s ? s.offsetHeight + 8 : 0)) + 'px'; }; // sits above the ICE card and the dispatch
   const close = (msg) => {
     if (!card) return; const c = card; card = null; clearInterval(iv);
     if (msg) { c.classList.remove('ring'); c.querySelector('.bd').textContent = msg; c.querySelector('.bt').remove(); c.querySelector('.cd').style.visibility = 'hidden'; card = c; stack(); }
@@ -449,35 +464,40 @@ try { (() => {
   loop(1, 1);
 })(); } catch (e) { console.error("[cp-fx]", e); }
 
-// ICE trace: while Claude works, a card bottom right fills one segment every 15 s (cyan, yellow, then red) with a percent readout, a hex stream and short glitch bursts that get more frequent as the trace nears done. It shows after 10 s of work, and on finish reads JACKED OUT with the real run time, then glitches out. Reads the cp-busy flag once a second; cpIce(s) shows a demo
+// ICE trace: while Claude works, a card bottom left fills one segment per 10 percent of the trace (cyan, yellow, then red) with a percent readout, a hex stream and rare glitch bursts. The percent follows 100 * (1 - e^(-t/100)), so it keeps creeping up on a long turn and never sticks (99.9 after about 10 minutes); after 10 minutes the card stays still. DOM is only touched when a value changes. It shows after 10 s of work, and on finish reads JACKED OUT with the real run time, then glitches out. Reads the cp-busy flag once a second; cpIce(s) shows a demo
 try { (() => {
   const mk = (tag, cls, text) => { const x = document.createElement(tag); x.className = cls; if (text) x.textContent = text; return x; };
   const T = { a: ['ROUTING THROUGH PROXY', 'NETWATCH SWEEP // LOW'], b: ['ICE ALERTED. KEEP MOVING.', 'NETWATCH SWEEP // MEDIUM'], c2: ['TRACE NEARLY COMPLETE', 'NETWATCH SWEEP // CRITICAL'] };
-  const P = { a: 0.1, b: 0.25, c2: 0.55 }; // chance of a glitch burst per second
+  const P = { a: 0.06, b: 0.15, c2: 0.25 }; // chance of a glitch burst per second
   const clock = (s) => String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(Math.floor(s % 60)).padStart(2, '0');
   const hex = () => '0x' + Array.from({ length: 4 }, () => Math.floor(Math.random() * 65536).toString(16).toUpperCase().padStart(4, '0')).join(' ');
-  let card = null, segs = [], tm, pc, tx, ft, hx, t0 = 0, quiet = 0, timers = [];
-  const off = () => document.documentElement.style.setProperty('--cp-ice-off', card ? card.offsetHeight + 8 + 'px' : '0px'); // dispatch and fixer stack above this card
-  const kill = () => { timers.forEach(clearTimeout); timers = []; if (card) { card.remove(); card = null; } off(); };
+  let card = null, segs = [], tm, pc, tx, ft, hx, t0 = 0, quiet = 0, timers = [], last = {}, ticks = 0, offV = '';
+  const off = () => { const v = card ? card.offsetHeight + 8 + 'px' : '0px'; if (v !== offV) { offV = v; document.documentElement.style.setProperty('--cp-ice-off', v); } }; // dispatch and fixer stack above this card; set only when the height changes so the page is not restyled every second
+  const kill = () => { timers.forEach(clearTimeout); timers = []; if (card) { card.remove(); card = null; } last = {}; off(); };
+  const put = (k, el, v) => { if (last[k] !== v) { last[k] = v; el.textContent = v; } };
   const build = () => {
-    card = mk('div', 'cp-ice a'); const hd = mk('div', 'h'), mid = mk('div', 'mid'), sg = mk('div', 'segs');
+    last = {}; card = mk('div', 'cp-ice a'); const hd = mk('div', 'h'), mid = mk('div', 'mid'), sg = mk('div', 'segs');
     tm = mk('b', '', '00:00'); hd.append(mk('span', '', '\u25B2 ICE TRACE'), tm);
     pc = mk('span', 'pc', '00%'); segs = []; for (let k = 0; k < 10; k++) { const i = mk('i', ''); segs.push(i); sg.appendChild(i); }
     mid.append(pc, sg); tx = mk('div', 's'); ft = mk('div', 'f'); hx = mk('div', 'x');
     card.append(mk('div', 'st'), hd, mid, tx, ft, hx); document.body.appendChild(card);
   };
-  const burst = (ms) => { card.classList.add('gl'); const c = card; timers.push(setTimeout(() => c.classList.remove('gl'), ms || 170)); };
+  const burst = (ms) => { if (!card) return; card.classList.add('gl'); const c = card; timers.push(setTimeout(() => c.classList.remove('gl'), ms || 170)); };
   const paint = (sec) => {
-    const lv = sec < 60 ? 'a' : sec < 135 ? 'b' : 'c2', n = Math.min(10, Math.floor(sec / 15) + 1);
-    card.className = 'cp-ice ' + lv; tm.textContent = clock(sec); tx.textContent = T[lv][0]; ft.textContent = T[lv][1];
-    pc.textContent = String(Math.min(99, Math.floor(sec / 150 * 100))).padStart(2, '0') + '%'; hx.textContent = hex();
-    segs.forEach((s, k) => { s.className = (k < n ? 'on' : '') + (lv === 'c2' && k === 9 ? ' bl' : ''); });
-    if (Math.random() < P[lv]) burst();
+    const pct = Math.min(99.9, 100 * (1 - Math.exp(-sec / 100)));
+    const lv = pct < 40 ? 'a' : pct < 75 ? 'b' : 'c2', n = Math.min(10, Math.max(1, Math.ceil(pct / 10)));
+    const cls = 'cp-ice ' + lv + (card.classList.contains('gl') ? ' gl' : '');
+    if (card.className !== cls) card.className = cls;
+    put('tm', tm, clock(sec)); put('tx', tx, T[lv][0]); put('ft', ft, T[lv][1]);
+    put('pc', pc, (pct < 90 ? String(Math.floor(pct)).padStart(2, '0') : pct.toFixed(1)) + '%');
+    if (last.n !== n || last.lv !== lv) { last.n = n; last.lv = lv; segs.forEach((s, k) => { s.className = k < n ? 'on' : ''; }); }
+    if (++ticks % 4 === 0) hx.textContent = hex();
+    if (sec < 600 && Math.random() < P[lv]) burst(); // after 10 minutes the card stays still
   };
   const done = (sec) => {
     cpStats.ice++; cpStats.longest = Math.max(cpStats.longest, sec);
     const c = card; c.className = 'cp-ice d'; tm.textContent = clock(sec); pc.textContent = 'OUT'; tx.textContent = 'JACKED OUT. CONNECTION CLEAN.'; ft.textContent = 'RAN ' + clock(sec); hx.textContent = 'SESSION CLOSED';
-    segs.forEach((s) => { s.className = 'on'; }); burst(300);
+    segs.forEach((s) => { s.className = 'on'; }); last = {}; burst(300);
     timers.push(setTimeout(() => c.classList.add('out'), 4000), setTimeout(() => { if (card === c) kill(); }, 4900));
   };
   every(() => {
@@ -739,6 +759,21 @@ try { (() => {
     ['Heist crew escapes tower in {D}', 'Alarms ring after a daring night job. Corp security says it is under control. Nobody believes them.'],
     ['Mystery signal hijacks {D} screens', 'Every billboard in {D} shows static and one phrase. Technicians are tracing the source.']
   ];
+  BIG.push(...[
+    ['Netrunners crash {D} traffic grid', 'Signals fail across {D}. Police urge drivers to leave cars and walk. Avoid {L}.'],
+    ['Fire races through {L} in {D}', 'Crews fight flames near {L}. {n} blocks are evacuated. Stay clear.'],
+    ['Convoy attack on the {D} highway', 'Gunfire along the road as cargo trucks scatter. Traffic is halted for {n} blocks.'],
+    ['Chemical leak closes {L}', 'A tank cracked at {L}. Residents of {D} are told to seal their windows.'],
+    ['Rolling blackout hits {D}', 'Utilities blame demand. Hospitals switch to backup power. Candles sell out.'],
+    ['Gang parade turns violent in {D}', '{G} and {G2} clash near {L}. Medics treat {n} people on the street.'],
+    ['Hostage standoff at {L}', 'Police close {D} streets. Negotiators are on the line. Stay home.'],
+    ['Rogue transit drones hit {L}', 'A fleet lost control over {D}. {C} says a patch is on the way.'],
+    ['Armoured giant walks through {D}', 'Witnesses say bullets did not slow it. Max-Tac is called. Stay indoors.'],
+    ['Speed freak runner tears through {L}', 'A blur on camera. Police lose track in seconds. Doctors fear for the runner.'],
+    ['Moon launch rumour empties {D} bars', 'Crowds gather at {L} to watch the sky. Officials call it a prank. Nobody leaves.'],
+    ['Tower assault rocks {D}', 'A small crew hits a corp tower in {D}. Alarms echo and the lights go out. Stay clear of {L}.'],
+    ['Cyberpsycho squad deployed to {L}', 'Max-Tac arrives in {D} within minutes. Streets are sealed until further notice.']
+  ]);
   const E = [ // [tag, colour, headline, body]: quiet nods to the Edgerunners anime, all original wording
     ['STREET', 'red', 'Edgerunner crews lose another member in {D}', 'Fixers say {n} runners went missing this month. Most crews stay quiet about it.'],
     ['STREET', 'red', 'Teen with new Sandevistan breaks track record near {L}', 'Doctors warn the implant can burn out a body. The kid says it was worth it.'],
@@ -773,7 +808,110 @@ try { (() => {
     ['NET', 'mag', 'Netwatch warns of stray signals over {D}', 'Techs link them to an old cyberdeck. Residents are told to unplug.'],
     ['CITY', 'stl', 'Lunar dreamers sign petition for cheaper flights', 'Backers fill {L} with paper moons. The airline has not replied.']
   ];
+  E.push(...[
+    ['STREET', 'red', 'Rookie crew takes first job in {D}', 'Three teenagers and a borrowed gun. The fixer says they will either learn fast or not at all.'],
+    ['HEALTH', 'grn', 'Clinic in {D} turns away patients without credit', 'Parents queue at {L} with sick kids. Doctors say the rules are not theirs.'],
+    ['NET', 'mag', 'Billboard in {D} shows the moon for ten seconds', 'Hackers claim it. A girl in the crowd cried. Techs have no trace.'],
+    ['CORP', 'cyan', 'Arasaka lab implant leaks to the street', 'Military grade speed hardware sells for {n}0 times its price. Clinics warn about the risks.'],
+    ['STREET', 'red', 'Fixer retires after {n} years', 'The last call came at dawn. Crews at {L} drank to the end of an era.'],
+    ['CITY', 'stl', 'Memorial wall at {L} grows by {n} names', 'Runners add faces from every crew. Neighbours bring flowers and keep the lights on.'],
+    ['CRIME', 'red', 'Corp debt collectors repossess implants in {D}', 'Late payers were left in the street half blind. Police take no complaints.'],
+    ['NET', 'mag', 'Netrunner found unresponsive with deck still running', 'Medics at {L} could not wake the runner. The deck was playing a loop of rain.'],
+    ['STREET', 'red', 'Nomad convoy parks outside {D}', 'Dusty trucks and loud music. Locals sell them water, noodles and parts.'],
+    ['CULTURE', 'mag', 'Afterlife bar names a drink after a legendary runner', 'It burns, glows and costs a week of pay. Sales are strong.'],
+    ['CORP', 'cyan', 'Academy student wins top marks in {D}', 'Raised on {L}, trained in a tower. The family says it hurts to be proud.'],
+    ['STREET', 'red', 'Runner crew steals a corp prototype and loses it', 'The crates were empty. Sources say the real cargo left an hour earlier.'],
+    ['HEALTH', 'grn', 'Chrome sickness ward fills in {D}', 'Doctors say users ignored the early signs. Beds go to the worst cases first.'],
+    ['CITY', 'stl', 'Kid with a wrecked bike gets a free ride from strangers', 'The {L} crowd chips in for parts. Another crew offers to pay for the paint.'],
+    ['MONEY', 'yel', 'Street cred now counts as collateral in {D}', 'Lenders ask for a name and a rumour. Some crews fear their rep is worth more than they are.'],
+    ['SPORT', 'yel', 'Speed trial ends without a winner at {L}', 'Both runners hit the finish at once. The judges called it a tie and blinked.'],
+    ['NET', 'mag', 'Girl in a grey hood tops the netrunner rankings', 'Nobody has seen her. Rumour puts her on the moon. Forums are on fire.'],
+    ['CORP', 'cyan', 'Tower security doubles after a daring rooftop raid', 'Guards in {D} now carry heavier gear. Residents notice the quiet on {L}.'],
+    ['STREET', 'red', 'Small gunner wins range tournament in {D}', 'The shortest competitor with the loudest shotgun. The crowd chanted her name.'],
+    ['CRIME', 'red', 'Kitchen table surgery goes wrong in {D}', 'A neighbour tried an implant without a licence. Police found the tools, not the patient.'],
+    ['CITY', 'stl', 'Neighbours feed a sleeping runner for a week', 'Nobody asked questions. The runner left a note and a jar of eddies.'],
+    ['CULTURE', 'mag', 'Street band plays a sad song for a fallen friend', 'The crowd at {L} sang the last line. The singer cried quietly.'],
+    ['STREET', 'red', 'Crew leader seen with a chrome arm in {D}', 'Neighbours say he stopped smiling after the upgrade. The kids still follow him.'],
+    ['CORP', 'cyan', 'Leak shows a corp counts runner deaths as a cost line', 'The memo called it attrition. Activists plan a vigil at {L}.'],
+    ['NET', 'mag', 'Dead account posts a single heart in {D}', 'Friends say it is a prank. The log shows it was sent at 3 AM.'],
+    ['HEALTH', 'grn', 'Speed implant users report memory gaps', 'A study of {n} users found fast reflexes and slow forgiveness. Dealers deny everything.'],
+    ['STREET', 'red', 'Gang buries their own at {L}', 'Smoke, music and one last toast. Rival crews stay away out of respect.'],
+    ['CITY', 'stl', 'Mother and son open a noodle stall in {D}', 'Their sign shows a tiny moon. Regulars say the broth tastes like home.'],
+    ['MONEY', 'yel', 'Black market price for military implants hits record', 'Buyers at {L} pay {n}0 percent over last week. Sellers say stock is dry.'],
+    ['CRIME', 'red', 'Biker gang robs a corp convoy near {D}', 'Ten bikes, one clean getaway. Insurers say the cargo was medical.'],
+    ['CULTURE', 'mag', 'Braindance of a runner crew sells out in {D}', 'Fans relive a fatal last job in high detail. Critics call it ghoulish. Sales say otherwise.'],
+    ['STREET', 'red', 'Teenager steals a speed unit from a lab truck', 'He hit top speed on the way out. Guards are still counting the seconds.'],
+    ['HEALTH', 'grn', 'Ripperdoc warns kids about cheap implants in {D}', 'She says half of her night patients are under {n}. Her clinic stays open until dawn.'],
+    ['NET', 'mag', 'Cyberpsychosis early warning app hits {D} decks', 'It watches your heart and your language. Critics say it watches everything.'],
+    ['CORP', 'cyan', 'Max-Tac recruits at the {D} job fair', 'Booths promise pay and pride. Applicants ask how long past recruits lasted.'],
+    ['CITY', 'stl', 'Lost bag with a pair of mantis blades returned at {L}', 'The owner said thanks and walked away fast. The clerk still has the receipt.'],
+    ['STREET', 'red', 'Crew splits over a job gone wrong at {L}', 'Two friends stopped talking. A third was left with the bill.'],
+    ['CULTURE', 'mag', 'Rooftop concert for a lost friend returns to {D}', 'The poster shows a smiling face. The crowd wears matching jackets.'],
+    ['MONEY', 'yel', 'Cheap chrome clinics undercut licensed ones in {D}', 'Prices drop {n} percent. Complications are not included in the quote.'],
+    ['CORP', 'cyan', 'Corp scholar program offers a ticket out of {D}', 'Applicants line up on {L}. The contract is long and the exit is not.'],
+    ['SPORT', 'yel', 'Street kids race rewired bikes across {L}', 'The winner got a trophy made of scrap. The loser got a free repair.'],
+    ['NET', 'mag', 'Black box signal draws runners to a derelict tower', 'Techs warn of traps. Crews bet on who gets in first.'],
+    ['CRIME', 'red', 'Arms deal collapses at the {L} docks', 'Two crews and a fixer left empty handed. A shipping crate sits unopened.'],
+    ['CITY', 'stl', 'Night shift nurse refuses a corp offer in {D}', 'She says her patients need her more than a title. The clinic gave her a day off.'],
+    ['STREET', 'red', 'Veteran runner teaches kids street rules', 'Rule one, never trust a perfect job. Rule two, buy the good armour.'],
+    ['CULTURE', 'mag', 'Rain soaked busker plays for the moon at {L}', 'The crowd looks up with him. A drone circles and hovers closer.'],
+    ['HEALTH', 'grn', 'Cooling baths offered to overloaded runners', 'Patients shake for hours. The nurse hands out blankets and warnings.'],
+    ['CORP', 'cyan', 'Rival firm launches a youth recruitment drive in {D}', 'Posters promise a future and fast pay. Parents compare the fine print.']
+  ]);
   const A = ['AD: {S}: STAY COVERED, STAY ALIVE', 'AD: {C}: THE FUTURE RUNS ON US', 'AD: {S}: HERE IN {n} MINUTES OR THE NEXT RIDE IS FREE', 'AD: {C}: BUILT FOR THE CITY THAT NEVER SLEEPS', 'AD: {S} PLANS FROM {n}0 PER MONTH'];
+  L.push(...['the ferry pier','the scrapyard','clinic row','arcade alley','the stairwell market','the sky bridge','the container maze','the gutter bar','the transit hub','the cemetery wall','the laundromat strip','the old billboard lot']);
+  G.push(...['Neon Reapers','Copper Foxes','Dust Kings','Blue Lotus','Grim Wheels','Static Wolves']);
+  C.push(...['Quantum Freight','Ironclad Medical','Silver Arc','Nova Retail','Pioneer Grid','Mirage Labs']);
+  S.push(...['Quick Doc','Rain Cab','Night Bites','Spark Repair']);
+  V.push(...['rail cart','bus','scooter convoy','garbage truck']);
+  W.push(...[['dust storm','dust'],['black rain','rain'],['sticky heat','heat'],['neon haze','haze']]);
+  const T2 = [
+    ['CRIME', 'red', 'Pawn shop in {D} hit by smash and grab', 'Thieves took {n} decks in under a minute. The owner says the shelves were already half empty.'],
+    ['CRIME', 'red', 'Courier robbed near {L}', 'A rider lost a sealed case and a bike. Police ask anyone with footage to come forward.'],
+    ['CRIME', 'red', 'Fake ID ring busted in {D}', '{n} forged cards found in a laundromat. Officers say the printer was better than theirs.'],
+    ['CRIME', 'red', '{G} tag every wall on {L}', 'Fresh paint in crew colours appeared overnight. Shop owners say washing it off costs more than the rent.'],
+    ['CRIME', 'red', 'Car thief leaves a thank you note at {L}', 'The owner found the tank full and a note on the seat. Police are not amused.'],
+    ['CRIME', 'red', 'Drone theft spree hits {D} rooftops', '{n} parcel drones vanished this week. Sellers are already offering them online.'],
+    ['CRIME', 'red', 'Witnesses go silent after shooting at {L}', 'Officers knocked on {n} doors and got no answers. A candle burns at the corner.'],
+    ['CORP', 'cyan', '{C} unveils pocket sized cyberdeck', 'It fits in a coat and heats up like a stove. Preorders in {D} sold out by noon.'],
+    ['CORP', 'cyan', '{C} cuts {n}0 jobs in {D}', 'Workers were told by message at dawn. The firm calls it a smart restructure.'],
+    ['CORP', 'cyan', '{C} buys a small rival for {n} million', 'The deal closed overnight. Staff at the old firm learned the news from their badges.'],
+    ['CORP', 'cyan', '{C} security drones now patrol {L}', 'Residents say they hum all night. The firm says it is for their safety.'],
+    ['CORP', 'cyan', '{C} offers free implant checks', 'Clinics in {D} line up to sign up. Critics say the fine print hands them every scan.'],
+    ['CORP', 'cyan', 'Quarterly profits at {C} jump {n} percent', 'Investors cheer. Street vendors outside the tower say they have not seen the benefit.'],
+    ['WEATHER', 'stl', 'Neon smog trapped over {D}', 'Air readings climb after a still night. Masks sell out at {L}.'],
+    ['WEATHER', 'stl', 'First frost on {L}', 'Water on the road turned to ice by dawn. Cab drivers swap tyres and complain.'],
+    ['WEATHER', 'stl', 'Warm rain brings crowds to {L}', 'Kids danced in the street until the power went out. Nobody minded.'],
+    ['WEATHER', 'stl', 'Dust storm rolls in from the badlands', 'Visibility drops across {D}. Air filters are on sale at every stall.'],
+    ['TRAFFIC', 'yel', 'Cab strike slows {D}', 'Drivers parked at {L} demanding fair rates. Rides cost {n} percent more.'],
+    ['TRAFFIC', 'yel', 'Bike lane opens along {L}', 'Couriers cheer. Truck drivers say the lane is too narrow and too popular.'],
+    ['TRAFFIC', 'yel', 'Overpass repairs close {L}', 'Work crews need {n} days. Drivers detour through {L2} and honk about it.'],
+    ['NET', 'mag', 'Hacker group defaces {C} homepage', 'A neon skull replaced the logo for {n} minutes. Techs call it harmless, then restart everything.'],
+    ['NET', 'mag', 'Rogue ad bot spams {D} decks', 'Users get the same ad {n} times an hour. Blockers sell out fast.'],
+    ['NET', 'mag', 'Deck repair shop in {D} wins loyal fans', 'Quick fixes, honest prices and free tea. The queue starts at dawn.'],
+    ['NET', 'mag', 'Old forum thread about {L} goes viral', 'Locals swap stories from years back. The oldest post is now a minor legend.'],
+    ['CULTURE', 'mag', 'Braindance review show returns to {D}', 'The host rates {n} new clips a week. Fans argue about every score.'],
+    ['CULTURE', 'mag', 'Street poets take over {L}', 'Rhymes about rent, rain and chrome. The crowd snaps along and the cops watch.'],
+    ['CULTURE', 'mag', 'Movie night under the overpass', 'A projector, a bedsheet and {n}0 neighbours. Popcorn sells for a day of pay.'],
+    ['CULTURE', 'mag', 'Night market adds a karaoke corner', 'Bad singing, loud cheers. Stall owners say sales are up {n} percent.'],
+    ['HEALTH', 'grn', 'Ripperdoc offers a free checkup day in {D}', 'Appointments fill within the hour. The doc says bring a friend and a clean towel.'],
+    ['HEALTH', 'grn', 'Smog clinic opens near {L}', 'Breathing tests are free this week. Doctors expect a long line.'],
+    ['HEALTH', 'grn', 'Nurses in {D} ask for night pay', 'A short walkout is planned. Officials say talks start next week.'],
+    ['SPORT', 'yel', 'Cage league names a new champion', 'The title changed hands after {m} seconds. The old champ asks for a rematch.'],
+    ['SPORT', 'yel', 'Rooftop soccer returns to {D}', 'Wire fences, no referee and a ball that has seen better days. Fans love it.'],
+    ['SPORT', 'yel', 'Bike gang challenges rivals to a charity race', 'Prize money goes to a clinic in {D}. Betting is allowed, ethics are not mentioned.'],
+    ['MONEY', 'yel', 'Noodle prices rise {n} percent', 'Stall owners blame supply costs. Regulars keep ordering anyway.'],
+    ['MONEY', 'yel', 'Pawn rates jump in {D}', 'Lenders cite risk. Borrowers cite lenders.'],
+    ['MONEY', 'yel', 'Cheap cab pass launches in {D}', 'Unlimited rides for a week, within one zone. The fine print is longer than the ride.'],
+    ['CITY', 'stl', 'Rooftop beekeeper sells honey in {D}', 'Jars labelled by block sell out. The taste changes with the street.'],
+    ['CITY', 'stl', 'Neighbours rebuild burned stall on {L}', 'Volunteers raised {n}00 eddies in one night. The stall reopens Friday.'],
+    ['CITY', 'stl', 'Old arcade cabinet found behind a wall in {D}', 'It still works. The high score is {n}00 and nobody knows who set it.'],
+    ['CITY', 'stl', 'Street dog adopts a night shift nurse', 'It waits at the clinic gate every dawn. Staff named it Chrome.'],
+    ['CITY', 'stl', 'City lights flicker for {n} seconds across {D}', 'Power says it was a test. Residents say it felt like a wink.'],
+    ['CITY', 'stl', 'Tram driver sings every stop in {D}', 'Commuters record it. The operator says there have been no complaints so far.'],
+    ['CITY', 'stl', 'Locals paint a lane on {L} for runners', 'Joggers get a neon stripe and clean air for one block. A start.']
+  ]; // more regular stories, each [tag, colour, headline, body]
+  T2.forEach((x) => T.push([x[2], x[3]]));
   const hash = (s) => { let h = 2166136261; for (const ch of s) h = Math.imul(h ^ ch.charCodeAt(0), 16777619); return h >>> 0; };
   const rng = (seed) => () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
   const day = () => new Date().toLocaleDateString('en-CA');
@@ -789,7 +927,7 @@ try { (() => {
   const batch = (salt, n) => { // n distinct stories for this date and salt
     const r = rng(hash(day() + salt)), out = [], seen = new Set();
     for (let k = 0; out.length < n && k < n * 8; k++) {
-      const e = r() < 0.12, ti = Math.floor(r() * (e ? E.length : T.length)), t = e ? E[ti].slice(2) : T[ti], f = fill(t[0] + "|" + t[1], r).split("|"), h = f[0].toUpperCase();
+      const e = r() < 0.15, ti = Math.floor(r() * (e ? E.length : T.length)), t = e ? E[ti].slice(2) : T[ti], f = fill(t[0] + "|" + t[1], r).split("|"), h = f[0].toUpperCase();
       if (!seen.has(h)) { seen.add(h); out.push([h, f[1], e ? E[ti] : CAT[ti]]); }
     }
     return out;
@@ -798,15 +936,41 @@ try { (() => {
   const CAT = []; // one [tag, colour] per template in T, in order
   [['CRIME', 5, 'red'], ['CORP', 5, 'cyan'], ['WEATHER', 2, 'stl'], ['TRAFFIC', 2, 'yel'], ['NET', 3, 'mag'], ['CULTURE', 4, 'mag'], ['HEALTH', 3, 'grn'], ['SPORT', 2, 'yel'], ['MONEY', 3, 'yel'], ['CITY', 4, 'stl']]
     .forEach((c) => { for (let i = 0; i < c[1]; i++) CAT.push([c[0], c[2]]); });
+  T2.forEach((x) => CAT.push([x[0], x[1]]));
   const SYM = ['HLX', 'ORB', 'KST', 'SBL', 'VNT', 'NGS', 'LMN', 'HLC'];
   const lf = (cls, text) => mk('span', 'lf ' + cls, text);
+  // real world headlines: the world-wire extension (not in this sandbox) fetches public RSS feeds and leaves them in the aria-label of a hidden status bar item as WIRE {json}; shown with their own white tag and italic text so they never pass for Night City news
+  const wireRead = () => {
+    for (const el of document.querySelectorAll('.part.statusbar .statusbar-item')) {
+      const lab = el.getAttribute('aria-label') || '';
+      if ((el.id && el.id.indexOf('wirefeed') !== -1) || lab.indexOf('WIRE ') === 0) { try { const p = JSON.parse(lab.replace(/^WIRE /, '')); return p && Array.isArray(p.items) ? p : null; } catch (e) { return null; } }
+    }
+    return null;
+  };
+  let wire = [], quotes = [], wireT = 0;
+  const fmtPrice = (p) => (p >= 1000 ? Math.round(p).toLocaleString('en-US') : p >= 100 ? p.toFixed(1) : p.toFixed(2));
+  every(() => { // a new set arrives every 20 minutes at most; redraw the row only then
+    const p = wireRead();
+    if (p && p.t !== wireT) { wireT = p.t; wire = p.items.filter((x) => Array.isArray(x) && typeof x[0] === 'string' && typeof x[1] === 'string').slice(0, 40).map((x) => [x[0].slice(0, 14), x[1].slice(0, 140)]); quotes = (Array.isArray(p.quotes) ? p.quotes : []).filter((x) => Array.isArray(x) && typeof x[0] === 'string' && Number.isFinite(x[1]) && Number.isFinite(x[2])).slice(0, 24).map((x) => [x[0].slice(0, 8), x[1], x[2]]); if (wire.length || quotes.length) setText(); }
+  }, 20000);
+  window.cpWire = () => { const p = wireRead(); return JSON.stringify({ shown: wire.length, quotes: quotes.length, stamp: wireT, errors: p ? p.err : 'no hidden item found (extension not loaded?)' }); };
   const fillRow = () => { // news with coloured tags, a made-up market segment every 8 stories, an ad every 5
     sp.textContent = '';
     const r = rng(hash(day() + 'ad')), news = batch('t', 20), ads = A.map((s) => fill(s, r).replace(/^AD: /, '').toUpperCase());
     const add = (tag, tagCls, ...rest) => { const it = mk('span', 'it'); it.append(lf('tg ' + tagCls, tag), ...rest); sp.append(it, mk('span', 'sp', '//')); };
     if (!news.length) news.push(['NIGHT CITY NEWS 24 STANDING BY', '', ['CITY', 'stl']]);
+    let wi = 0, qi = 0;
     news.forEach((x, k) => {
       add(x[2][0], x[2][1], lf('bd2', x[0]));
+      if (wire.length && k % 3 === 2) { const w = wire[wi++ % wire.length]; add(w[0], 'wr wr-' + w[0].toLowerCase().replace(/[^a-z0-9]+/g, ''), lf('bd2 wt', w[1].toUpperCase())); } // every third story is a real one
+      if (quotes.length && k % 10 === 5) { // a real prices segment: four symbols, the next four on the next one
+        const o = (qi++ * 4) % quotes.length, parts = [];
+        for (let n = 0; n < Math.min(4, quotes.length); n++) {
+          const q = quotes[(o + n) % quotes.length], up = q[2] >= 0, g = mk('span', 'mk');
+          g.append(lf('bd2 wt', q[0] + ' ' + fmtPrice(q[1])), mk('span', 'ar ' + (up ? 'up' : 'dn')), lf(up ? 'up' : 'dn', Math.abs(q[2]).toFixed(1) + '%')); parts.push(g);
+        }
+        add('LIVE MKT', 'wr wr-mkt', ...parts);
+      }
       if (k % 5 === 4) add('AD', 'ad', lf('bd2', ads[(k / 5 | 0) % ads.length]));
       if (k % 8 === 7) {
         const pool = SYM.slice(), parts = [];
