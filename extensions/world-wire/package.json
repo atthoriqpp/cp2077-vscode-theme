@@ -28,7 +28,7 @@
         },
         "worldWire.feeds": {
           "type": "array",
-          "description": "RSS feeds to read (https only). Only the item titles are used.",
+          "description": "RSS feeds to read (https only). Only the item titles and the site's icon are used.",
           "items": {
             "type": "object",
             "properties": {
@@ -37,6 +37,10 @@
               },
               "url": {
                 "type": "string"
+              },
+              "icon": {
+                "type": "string",
+                "description": "Optional https URL of a small logo. Default is the site's /favicon.ico."
               }
             },
             "required": [
@@ -47,19 +51,43 @@
           "default": [
             {
               "name": "BBC",
-              "url": "https://feeds.bbci.co.uk/news/world/rss.xml"
+              "url": "https://feeds.bbci.co.uk/news/world/rss.xml",
+              "icon": "https://www.bbc.com/favicon.ico"
             },
             {
               "name": "GUARDIAN",
-              "url": "https://www.theguardian.com/world/rss"
+              "url": "https://www.theguardian.com/world/rss",
+              "icon": "https://www.theguardian.com/favicon.ico"
             },
             {
               "name": "NPR",
-              "url": "https://feeds.npr.org/1001/rss.xml"
+              "url": "https://feeds.npr.org/1001/rss.xml",
+              "icon": "https://www.npr.org/favicon.ico"
             },
             {
               "name": "AL JAZEERA",
-              "url": "https://www.aljazeera.com/xml/rss/all.xml"
+              "url": "https://www.aljazeera.com/xml/rss/all.xml",
+              "icon": "https://www.aljazeera.com/favicon.ico"
+            },
+            {
+              "name": "ANTARA",
+              "url": "https://www.antaranews.com/rss/terkini.xml",
+              "icon": "https://www.antaranews.com/favicon.ico"
+            },
+            {
+              "name": "CNN INDONESIA",
+              "url": "https://www.cnnindonesia.com/nasional/rss",
+              "icon": "https://www.cnnindonesia.com/favicon.ico"
+            },
+            {
+              "name": "TEMPO",
+              "url": "https://rss.tempo.co/nasional",
+              "icon": "https://www.tempo.co/favicon.ico"
+            },
+            {
+              "name": "CNBC INDONESIA",
+              "url": "https://www.cnbcindonesia.com/news/rss",
+              "icon": "https://cdn.cnbcindonesia.com/cnbc/images/logo/2026/favicon.png?v=7.1.1"
             }
           ]
         },

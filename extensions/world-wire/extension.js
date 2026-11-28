@@ -9,21 +9,38 @@ const ENT = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' };
 const CRY = { bitcoin: 'BTC', ethereum: 'ETH', solana: 'SOL', dogecoin: 'DOGE', ripple: 'XRP', cardano: 'ADA', litecoin: 'LTC', binancecoin: 'BNB' };
 const IDX = { '^GSPC': 'SPX', '^IXIC': 'IXIC', '^DJI': 'DJI', '^FTSE': 'FTSE', '^N225': 'N225', '^GDAXI': 'DAX' };
 
-function get(url, accept, hops) {
+function get(url, accept, hops, bin) {
   hops = hops || 0;
   return new Promise((resolve, reject) => {
     const rq = https.get(url, { headers: { 'User-Agent': UA, Accept: accept || 'application/rss+xml, application/xml, text/xml' }, timeout: 10000 }, (r) => {
       if (r.statusCode >= 300 && r.statusCode < 400 && r.headers.location && hops < 3) {
-        r.resume(); resolve(get(new URL(r.headers.location, url).toString(), accept, hops + 1)); return;
+        r.resume(); resolve(get(new URL(r.headers.location, url).toString(), accept, hops + 1, bin)); return;
       }
       if (r.statusCode !== 200) { r.resume(); reject(new Error('HTTP ' + r.statusCode)); return; }
       let n = 0; const parts = [];
       r.on('data', (c) => { n += c.length; if (n > 2e6) rq.destroy(new Error('too large')); else parts.push(c); });
-      r.on('end', () => resolve(Buffer.concat(parts).toString('utf8')));
+      r.on('end', () => { const b = Buffer.concat(parts); resolve(bin ? b : b.toString('utf8')); });
     });
     rq.on('timeout', () => rq.destroy(new Error('timeout')));
     rq.on('error', reject);
   });
+}
+
+// ---- source logos: each feed's own icon file, fetched once and sent as a small data URI (the page cannot fetch images itself) ----
+const LOGO_MAX = 24000;
+function mimeOf(b) { // the server's content type is not trusted (one site serves a JPEG as .ico); the first bytes decide
+  if (b.length > 8 && b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47) return 'image/png';
+  if (b.length > 4 && b[0] === 0xff && b[1] === 0xd8) return 'image/jpeg';
+  if (b.length > 4 && b[0] === 0 && b[1] === 0 && b[2] === 1 && b[3] === 0) return 'image/x-icon';
+  if (b.length > 4 && b.slice(0, 4).toString() === 'GIF8') return 'image/gif';
+  return null; // HTML error pages and anything else are dropped
+}
+async function logoOf(feedUrl, icon) {
+  const u = icon && /^https:\/\//i.test(icon) ? icon : new URL('/favicon.ico', feedUrl).toString();
+  const b = await get(u, 'image/*', 0, true), m = mimeOf(b);
+  if (!m) throw new Error('not an image');
+  if (b.length > LOGO_MAX) throw new Error('logo too large (' + b.length + ' bytes)');
+  return 'data:' + m + ';base64,' + b.toString('base64');
 }
 
 function clean(s) { // CDATA, tags and entities out; plain ASCII punctuation in (the ticker font and the no dash rule)
@@ -174,7 +191,7 @@ async function getWx(err) { // null = no location set (feature off); undefined =
 
 function cfg() { return vscode.workspace.getConfiguration('worldWire'); }
 function feeds() {
-  return (cfg().get('feeds') || []).filter((f) => f && typeof f.name === 'string' && typeof f.url === 'string' && /^https:\/\//i.test(f.url)).map((f) => [f.name.toUpperCase().slice(0, 14), f.url]);
+  return (cfg().get('feeds') || []).filter((f) => f && typeof f.name === 'string' && typeof f.url === 'string' && /^https:\/\//i.test(f.url)).map((f) => [f.name.toUpperCase().slice(0, 14), f.url, typeof f.icon === 'string' ? f.icon : '']);
 }
 function list(key, re) { return (cfg().get(key) || []).filter((s) => typeof s === 'string' && re.test(s)).slice(0, 12); }
 
@@ -187,9 +204,10 @@ function activate(context) {
   item.text = '​'; // zero width: present in the DOM, invisible to the eye
   context.subscriptions.push(item);
   let items = [], quotes = [], wx = null, busy = false;
+  const logos = {}, logoTried = {}; // one try per source and session, so a site without an icon is not hit every refresh
 
   const publish = (err) => {
-    item.accessibilityInformation = { label: 'WIRE ' + JSON.stringify({ t: Date.now(), items, quotes, wx, err }) };
+    item.accessibilityInformation = { label: 'WIRE ' + JSON.stringify({ t: Date.now(), items, quotes, wx, logos, err }) };
     item.show();
   };
   const refresh = async () => {
@@ -199,7 +217,9 @@ function activate(context) {
       const err = {};
       const ids = list('crypto', /^[a-z0-9-]{1,30}$/), syms = list('stocks', /^[A-Za-z0-9.^=-]{1,12}$/);
       const [lists, cry, stk, wxn] = await Promise.all([
-        Promise.all(feeds().map(async ([src, url]) => { try { return [src, titles(await get(url))]; } catch (e) { err[src] = String((e && e.message) || e).slice(0, 80); return [src, []]; } })),
+        Promise.all(feeds().map(async ([src, url, icon]) => {
+          if (!logoTried[src]) { logoTried[src] = 1; try { logos[src] = await logoOf(url, icon); } catch (e) { err['LOGO ' + src] = String((e && e.message) || e).slice(0, 60); } }
+          try { return [src, titles(await get(url))]; } catch (e) { err[src] = String((e && e.message) || e).slice(0, 80); return [src, []]; } })),
         ids.length ? get('https://api.coingecko.com/api/v3/simple/price?ids=' + ids.map(encodeURIComponent).join(',') + '&vs_currencies=usd&include_24hr_change=true', 'application/json').then((t) => cryptoRows(JSON.parse(t), ids)).catch((e) => { err.CRYPTO = String((e && e.message) || e).slice(0, 80); return []; }) : [],
         Promise.all(syms.map((s) => get('https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(s) + '?interval=1d&range=5d', 'application/json').then((t) => quoteFrom(s, JSON.parse(t))).catch((e) => { err[s] = String((e && e.message) || e).slice(0, 60); return null; }))),
         getWx(err),
@@ -221,4 +241,4 @@ function activate(context) {
 }
 
 function deactivate() {}
-module.exports = { activate, deactivate, _t: { clean, titles, interleave, cryptoRows, quoteFrom, get, sky, planAlert, buildWx, place, geocode, pickLocation, searchCities } };
+module.exports = { activate, deactivate, _t: { mimeOf, logoOf, clean, titles, interleave, cryptoRows, quoteFrom, get, sky, planAlert, buildWx, place, geocode, pickLocation, searchCities } };

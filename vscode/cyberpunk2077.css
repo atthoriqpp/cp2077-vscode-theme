@@ -945,6 +945,8 @@
 .part.statusbar .statusbar-item[id*="wirefeed"] { display: none !important; }
 .cp-nrow .tg.wr { color: #0a0a0f; background: #E6E6EA; border-color: #E6E6EA; }
 .cp-nrow .tg.wr::before { content: "\25C9\00a0"; }
+.cp-nrow .tg.wr.hl::before { content: none; }
+.cp-nrow .tg .wl { width: 12px; height: 12px; margin-right: 5px; vertical-align: -2px; object-fit: contain; border-radius: 2px; image-rendering: auto; }
 .cp-nrow .wt { color: #FFFFFF; } /* same font, case and spacing as the Night City items; white is the only text difference */
 
 /* Weather alert card: same family as the NCPD dispatch (chamfer, left edge colour that says which kind), bottom left above the ICE card, dispatch and fixer call; the script sets bottom */

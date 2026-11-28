@@ -1001,12 +1001,13 @@ try { (() => {
     }
     return null;
   };
-  let wire = [], quotes = [], wx = null, wireT = 0, wxSeen = false, wxErr = '', paintWx = () => {};
+  let wire = [], wlogos = {}, quotes = [], wx = null, wireT = 0, wxSeen = false, wxErr = '', paintWx = () => {};
   const okn = Number.isFinite, wxLine = () => [String(wx.sky).toUpperCase().slice(0, 16), wx.temp + 'C', 'WIND ' + wx.wind + ' KPH', wx.aqi !== null ? 'SMOG INDEX ' + wx.aqi : '', wx.uv !== null ? 'RAD ' + wx.uv : ''].filter(Boolean).join(' // ');
   const fmtPrice = (p) => (p >= 1000 ? Math.round(p).toLocaleString('en-US') : p >= 100 ? p.toFixed(1) : p.toFixed(2));
   every(() => { // a new set arrives every 20 minutes at most; redraw the row only then
     const p = wireRead();
-    if (p && p.t !== wireT) { wireT = p.t; wire = p.items.filter((x) => Array.isArray(x) && typeof x[0] === 'string' && typeof x[1] === 'string').slice(0, 40).map((x) => [x[0].slice(0, 14), x[1].slice(0, 140)]); quotes = (Array.isArray(p.quotes) ? p.quotes : []).filter((x) => Array.isArray(x) && typeof x[0] === 'string' && Number.isFinite(x[1]) && Number.isFinite(x[2])).slice(0, 24).map((x) => [x[0].slice(0, 8), x[1], x[2]]); const w = p.wx; // real weather from the extension; null when no location is set
+    if (p && p.t !== wireT) { wireT = p.t; wlogos = {}; if (p.logos && typeof p.logos === 'object') for (const k of Object.keys(p.logos)) { const v = p.logos[k]; if (typeof v === 'string' && v.indexOf('data:image/') === 0 && v.length < 40000) wlogos[k.slice(0, 14)] = v; } // each source's own icon, sent by the extension as a data URI
+    wire = p.items.filter((x) => Array.isArray(x) && typeof x[0] === 'string' && typeof x[1] === 'string').slice(0, 40).map((x) => [x[0].slice(0, 14), x[1].slice(0, 140)]); quotes = (Array.isArray(p.quotes) ? p.quotes : []).filter((x) => Array.isArray(x) && typeof x[0] === 'string' && Number.isFinite(x[1]) && Number.isFinite(x[2])).slice(0, 24).map((x) => [x[0].slice(0, 8), x[1], x[2]]); const w = p.wx; // real weather from the extension; null when no location is set
     wx = w && typeof w === 'object' && okn(w.temp) && okn(w.wind) && typeof w.sky === 'string' ? { temp: Math.round(w.temp), wind: Math.round(w.wind), sky: w.sky.slice(0, 16), aqi: okn(w.aqi) ? Math.round(w.aqi) : null, uv: okn(w.uv) ? Math.round(w.uv) : null, rise: typeof w.rise === 'string' ? w.rise.slice(0, 5) : null, set: typeof w.set === 'string' ? w.set.slice(0, 5) : null, alert: w.alert && typeof w.alert === 'object' ? w.alert : null } : null;
     window.cpWxData = wx; wxSeen = true; wxErr = p.err && typeof p.err.WEATHER === 'string' ? p.err.WEATHER.slice(0, 60) : ''; paintWx();
     if (wire.length || quotes.length || wx) setText(); }
@@ -1015,7 +1016,9 @@ try { (() => {
   const fillRow = () => { // news with coloured tags, a made-up market segment every 8 stories, an ad every 5
     sp.textContent = '';
     const r = rng(hash(day() + 'ad')), news = batch('t', 20), ads = A.map((s) => fill(s, r).replace(/^AD: /, '').toUpperCase());
-    const add = (tag, tagCls, ...rest) => { const it = mk('span', 'it'); it.append(lf('tg ' + tagCls, tag), ...rest); sp.append(it, mk('span', 'sp', '//')); };
+    const add = (tag, tagCls, ...rest) => { const it = mk('span', 'it'), tg = lf('tg ' + tagCls, tag), lg = wlogos[tag]; // a real source gets its logo inside the tag
+      if (lg && tagCls.indexOf('wr-') !== -1) { const im = document.createElement('img'); im.className = 'wl'; im.src = lg; im.alt = ''; tg.prepend(im); tg.classList.add('hl'); }
+      it.append(tg, ...rest); sp.append(it, mk('span', 'sp', '//')); };
     if (!news.length) news.push(['NIGHT CITY NEWS 24 STANDING BY', '', ['CITY', 'stl']]);
     let wi = 0, qi = 0;
     news.forEach((x, k) => {
