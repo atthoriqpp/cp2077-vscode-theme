@@ -62,7 +62,7 @@ $xaml = @"
       </Grid>
       <StackPanel Margin="84,7,20,10">
         <Grid>
-          <TextBlock FontFamily="Bahnschrift SemiCondensed" FontSize="11">
+          <TextBlock FontFamily="Bahnschrift SemiCondensed" FontSize="11" TextTrimming="CharacterEllipsis" Margin="0,0,96,0">
             <Run x:Name="Head" Text="INCOMING CALL"/><Run x:Name="Proj" Foreground="#00F0FF"/>
           </TextBlock>
           <TextBlock x:Name="Time" FontFamily="Consolas" FontSize="10" Foreground="#00F0FF" HorizontalAlignment="Right" Margin="0,1,22,0"/>
@@ -134,9 +134,17 @@ $ghosts = foreach ($c in $ghostCols) {
   $g
 }
 
-$wa = [Windows.SystemParameters]::WorkArea
-$win.Left = $wa.Right - $W - 16
-$win.Top = $wa.Bottom - 16 - $H - $slot * ($H + $gap)
+# Placement: bottom-right of the primary screen's work area. SystemParameters.WorkArea can come back
+# in device pixels above 100% display scaling, which put the popup partly off-screen at 125%, so the
+# work area is read in device pixels from Windows Forms and converted with the window's DPI transform.
+Add-Type -AssemblyName System.Windows.Forms
+$win.Add_SourceInitialized({
+    $src = [Windows.Interop.HwndSource]::FromHwnd((New-Object Windows.Interop.WindowInteropHelper $win).Handle)
+    $wa = [Windows.Forms.Screen]::PrimaryScreen.WorkingArea
+    $br = $src.CompositionTarget.TransformFromDevice.Transform((New-Object Windows.Point $wa.Right, $wa.Bottom))
+    $win.Left = $br.X - $W - 16
+    $win.Top = $br.Y - 16 - $H - $slot * ($H + $gap)
+  })
 
 function Get-Keys($pairs, [switch]$Linear) {
   $a = New-Object Windows.Media.Animation.DoubleAnimationUsingKeyFrames
